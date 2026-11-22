@@ -1,0 +1,8 @@
+{
+  "name": "nightmare-breakout",
+  "engine": "godot",
+  "launch": { "cmd": "/Users/jake/Desktop/Godot.app/Contents/MacOS/Godot", "args": ["--path", "."] },
+  "log": { "stdout": true },
+  "ready": "Godot Engine v",
+  "sourceRoots": ["."]
+}
