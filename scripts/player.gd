@@ -1,3 +1,4 @@
+
 extends CharacterBody3D
 
 @export var speed: float = 5.0
@@ -13,13 +14,18 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	
+	if event.is_action_pressed("interact"):
+		print("Interact pressed!")
+
 	if event is InputEventMouseMotion:
 		rotate_y(-event.relative.x * mouse_sensitivity)
 		camera.rotate_x(-event.relative.y * mouse_sensitivity)
 		camera.rotation.x = clamp(camera.rotation.x, deg_to_rad(-89), deg_to_rad(89))
 
 	if event.is_action_pressed("ui_cancel"):
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
