@@ -445,7 +445,7 @@ func _build_memory() -> void:
 		b.custom_minimum_size = Vector2(120, 80)
 		b.add_theme_font_size_override("font_size", 34)
 		var idx := i
-		b.pressed.connect(func(): _finish(idx == sol, "WRONG — IT WAS " + symbols[sol]))
+		b.pressed.connect(func(): _finish(idx == sol, "WRONG POSITION"))
 		grid.add_child(b)
 		btns.append(b)
 	var myrun := run_id
@@ -461,17 +461,17 @@ func _memorize(btns: Array[Button], sol: int, myrun: int) -> void:
 		await get_tree().create_timer(0.22, true, false, true).timeout
 		btns[i].modulate = Color(1, 1, 1)
 		await get_tree().create_timer(0.05, true, false, true).timeout
+	await get_tree().create_timer(0.5, true, false, true).timeout
+	if myrun != run_id or not panel.visible:
+		return
 	if sol >= 0 and sol < btns.size():
 		btns[sol].text = "✖"
-	await get_tree().create_timer(2.5, true, false, true).timeout
-	if myrun == run_id and panel.visible:
-		btns[sol].text = symbols_text(sol)
-		status.text = "WHICH SYMBOL WAS REPLACED?"
-
-
-func symbols_text(i: int) -> String:
-	var symbols := ["▲", "●", "■", "◆", "★", "✚"]
-	return symbols[i]
+		await get_tree().create_timer(1.6, true, false, true).timeout
+		if myrun != run_id or not panel.visible:
+			return
+	for i in btns.size():
+		btns[i].text = str(i + 1)
+	status.text = "WHICH POSITION CHANGED?"
 
 
 # ---------------------------------------------------------------
@@ -612,12 +612,17 @@ func _build_object_place() -> void:
 	var slot_names: Array = current.get("slot_names", ["SLOT A", "SLOT B", "SLOT C", "SLOT D"])
 	var placed := {}
 	var slot_btns: Array[Button] = []
-	var item_btns: Array[Button] = []
+	widgets["selected_slot"] = -1
+	widgets["placed"] = placed
+	widgets["item_names"] = item_names
+	widgets["slot_btns"] = slot_btns
 	var row := _row()
 	for i in slot_names.size():
 		var b := Button.new()
 		b.text = str(slot_names[i]) + "\n[empty]"
 		b.custom_minimum_size = Vector2(150, 70)
+		var idx := i
+		b.pressed.connect(func(): _select_slot(idx))
 		slot_btns.append(b)
 		row.add_child(b)
 	var row2 := _row()
@@ -626,24 +631,30 @@ func _build_object_place() -> void:
 		b.text = str(item_names[i])
 		b.custom_minimum_size = Vector2(120, 50)
 		var idx := i
-		b.pressed.connect(func(): _place_item(idx, slot_btns, placed, sol, item_names))
+		b.pressed.connect(func(): _place_selected_item(idx))
 		row2.add_child(b)
-		item_btns.append(b)
+	_label("CLICK A SLOT, THEN AN OBJECT", 16, Color(0.6, 0.8, 0.7))
 	_button("CHECK PLACEMENT", func():
-		var ok = true
+		var ok := placed.size() == sol.size()
 		for s in sol.keys():
 			if int(placed.get(s, -1)) != int(sol[s]):
 				ok = false
 		_finish(ok, "OBJECTS REJECTED"))
 
 
-func _place_item(item_idx: int, slot_btns: Array[Button], placed: Dictionary,
-		sol: Dictionary, item_names: Array) -> void:
-	# Find first empty slot (simple: assign to slot matching solution index order).
-	var order := sol.keys()
-	for s in order:
-		if not placed.has(s):
-			placed[s] = item_idx
-			slot_btns[int(s)].text = str(slot_btns[int(s)].text.split("\n")[0]) + "\n" + str(item_names[item_idx])
-			return
-	status.text = "ALL SLOTS FILLED"
+func _select_slot(i: int) -> void:
+	widgets["selected_slot"] = i
+	status.text = "SLOT %d SELECTED" % (i + 1)
+
+
+func _place_selected_item(item_idx: int) -> void:
+	var slot: int = widgets.get("selected_slot", -1)
+	if slot < 0:
+		status.text = "SELECT A SLOT FIRST"
+		return
+	var placed: Dictionary = widgets["placed"]
+	var slot_btns: Array[Button] = widgets["slot_btns"]
+	var item_names: Array = widgets["item_names"]
+	placed[slot] = item_idx
+	slot_btns[slot].text = "SLOT %d\n%s" % [slot + 1, str(item_names[item_idx])]
+	status.text = ""
