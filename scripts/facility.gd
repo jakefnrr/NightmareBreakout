@@ -97,17 +97,17 @@ func build(g: Node) -> void:
 # ---------------------------------------------------------------
 
 func _assign_layout() -> void:
-	const ELEV_SLOTS := [Vector2i(2, 1), Vector2i(4, 2)]
-	const STAIR_LINKS := [
+	var ELEV_SLOTS := [Vector2i(2, 1), Vector2i(4, 2)]
+	var STAIR_LINKS := [
 		{"slot": Vector2i(0, 3), "lo": 0, "hi": 1},
 		{"slot": Vector2i(4, 1), "lo": 1, "hi": 2},
 		{"slot": Vector2i(1, 0), "lo": 2, "hi": 3},
 	]
-	const SECRET := {
+	var SECRET := {
 		0: [Vector2i(0, 0), Vector2i(4, 3)],
 		1: [Vector2i(2, 0), Vector2i(4, 3)],
 	}
-	const OPEN_SLOTS := {
+	var OPEN_SLOTS := {
 		0: [Vector2i(2, 2)],
 		1: [Vector2i(0, 2), Vector2i(4, 0)],
 		2: [Vector2i(2, 3), Vector2i(4, 1)],
@@ -137,7 +137,8 @@ func _assign_layout() -> void:
 				if sc in ELEV_SLOTS:
 					types[k] = "elevator"
 					themes[k] = "elevator"
-					elevators.append({"c": c, "r": r})
+					if fi == 0:
+						elevators.append({"c": c, "r": r})
 				elif sc in SECRET.get(fi, []):
 					types[k] = "secret"
 					themes[k] = "final" if fi == 0 and sc == Vector2i(0, 0) else "secret"
@@ -960,21 +961,22 @@ func _build_path(fi: int, came: Dictionary, goal: Vector2i) -> Array:
 	while came.has(cur):
 		cur = came[cur]
 		cells.push_front(cur)
-	# Convert to world, simplify collinear.
 	var pts := []
 	for c in cells:
 		pts.append(cell_world(fi, c))
-	var out := []
-	var prev_dir := Vector2i.ZERO
-	for i in pts.size():
-		var p: Vector3 = pts[i]
-		if i + 1 < pts.size():
-			var n: Vector3 = pts[i + 1]
-			var d := Vector2i(int(round(n.x - p.x)), int(round(n.z - p.z)))
-			if d == prev_dir and out.size() > 0:
-				continue
-			prev_dir = d
-		out.append({"pos": p})
-	if out.size() > 0:
-		out[out.size() - 1] = {"pos": pts[pts.size() - 1]}
+	if pts.is_empty():
+		return []
+	var out := [{"pos": pts[0]}]
+	for i in range(1, pts.size() - 1):
+		var d_in := _dir_between(pts[i - 1], pts[i])
+		var d_out := _dir_between(pts[i], pts[i + 1])
+		if d_in != d_out:
+			out.append({"pos": pts[i]})
+	out.append({"pos": pts[pts.size() - 1]})
 	return out
+
+
+func _dir_between(a: Vector3, b: Vector3) -> Vector2i:
+	var sx := 1 if b.x > a.x else (-1 if b.x < a.x else 0)
+	var sz := 1 if b.z > a.z else (-1 if b.z < a.z else 0)
+	return Vector2i(sx, sz)
