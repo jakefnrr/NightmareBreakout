@@ -32,6 +32,12 @@ size = Vector3(0.5, 4, 20)
 [sub_resource type="BoxShape3D" id="BoxShape3D_2q6dc"]
 size = Vector3(0.5, 4, 20)
 
+[sub_resource type="BoxMesh" id="BoxMesh_x0mgj"]
+size = Vector3(20, 0.5, 20)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_02bhh"]
+size = Vector3(20, 0.5, 20)
+
 [node name="Level" type="Node3D" unique_id=46466924]
 
 [node name="Player" parent="." unique_id=1673119226 instance=ExtResource("1_2q6dc")]
@@ -85,3 +91,16 @@ mesh = SubResource("BoxMesh_nmxdt")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Wall4" unique_id=1899341806]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 2, 0)
 shape = SubResource("BoxShape3D_2q6dc")
+
+[node name="Roof" type="StaticBody3D" parent="." unique_id=2045782904]
+
+[node name="RoofMesh" type="MeshInstance3D" parent="Roof" unique_id=1056732253]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+mesh = SubResource("BoxMesh_x0mgj")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Roof" unique_id=1923503118]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.63050985, 1.7872427, -0.29804158)
+shape = SubResource("BoxShape3D_02bhh")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=290811957]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 4, 0)
