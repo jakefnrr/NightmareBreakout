@@ -1,25 +1,25 @@
 extends Node
 
-const MIX_RATE := 22050.0
-const POOL_SIZE := 6
+const MIX_RATE = 22050.0
+const POOL_SIZE = 6
 
 var game: Node = null
 var players: Array[AudioStreamPlayer] = []
 var cache: Dictionary = {}
 var gen: AudioStreamGenerator = null
 var gen_player: AudioStreamPlayer = null
-var feed_accum := 0.0
-var ambience_on := false
-var chase := false
-var outage := false
-var drip_timer := 5.0
-var started := false
+var feed_accum = 0.0
+var ambience_on = false
+var chase = false
+var outage = false
+var drip_timer = 5.0
+var started = false
 
 
 func _ready() -> void:
 	game = get_node("/root/Main")
 	for i in POOL_SIZE:
-		var p := AudioStreamPlayer.new()
+		var p = AudioStreamPlayer.new()
 		p.bus = &"Master"
 		add_child(p)
 		players.append(p)
@@ -74,34 +74,34 @@ func _process(delta: float) -> void:
 
 
 func _feed() -> void:
-	var playback := gen_player.get_stream_playback() as AudioStreamGeneratorPlayback
+	var playback = gen_player.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback == null or not playback.can_push_buffer(512):
 		return
-	var frames := PackedVector2Array()
+	var frames = PackedVector2Array()
 	frames.resize(512)
-	var t := Time.get_ticks_msec() / 1000.0
-	var chase_gain := 1.0 if chase else 0.0
-	var outage_hum := 0.35 if outage else 0.0
+	var t = Time.get_ticks_msec() / 1000.0
+	var chase_gain = 1.0 if chase else 0.0
+	var outage_hum = 0.35 if outage else 0.0
 	for i in 512:
-		var tt := t + i / MIX_RATE
-		var slow := 0.6 + 0.4 * sin(tt * 0.4)
-		var s := sin(tt * TAU * 46.0) * 0.20 \
+		var tt = t + i / MIX_RATE
+		var slow = 0.6 + 0.4 * sin(tt * 0.4)
+		var s = sin(tt * TAU * 46.0) * 0.20 \
 			+ sin(tt * TAU * 46.7) * 0.18 \
 			+ sin(tt * TAU * 92.3) * 0.07 \
 			+ (randf() - 0.5) * 0.035
 		s *= slow * (0.55 + 0.25 * chase_gain)
 		# Dissonant chase pulse.
 		if chase:
-			var pulse := pow(0.5 + 0.5 * sin(tt * TAU * 5.5), 3.0)
+			var pulse = pow(0.5 + 0.5 * sin(tt * TAU * 5.5), 3.0)
 			s += (sin(tt * TAU * 155.0) * 0.10 + sin(tt * TAU * 164.0) * 0.08) * pulse
 		if outage_hum > 0.0:
 			s += sin(tt * TAU * 120.0) * 0.05 * outage_hum
-		var v := clampf(s, -1.0, 1.0) * (chase ? 0.9 : 0.55)
+		var v = clampf(s, -1.0, 1.0) * (0.9 if chase else 0.55)
 		frames[i] = Vector2(v, v)
 	playback.push_buffer(frames)
 
 
-func play_sfx(sfx_name: String, volume_db := 0.0) -> void:
+func play_sfx(sfx_name: String, volume_db = 0.0) -> void:
 	var stream: AudioStream = cache.get(sfx_name, null)
 	if stream == null:
 		stream = _synthesize(sfx_name)
@@ -159,8 +159,8 @@ func _synthesize(n: String) -> AudioStream:
 
 
 func _footstep(surface: String) -> AudioStream:
-	var dur := 0.12
-	var vol := 0.5
+	var dur = 0.12
+	var vol = 0.5
 	match surface:
 		"metal": dur = 0.16; vol = 0.55
 		"tile": dur = 0.10; vol = 0.45
@@ -172,12 +172,12 @@ func _footstep(surface: String) -> AudioStream:
 
 
 func _wav_bytes(samples: PackedFloat32Array) -> AudioStreamWAV:
-	var data := PackedByteArray()
+	var data = PackedByteArray()
 	data.resize(samples.size())
 	for i in samples.size():
-		var v := int(clampf(samples[i], -1.0, 1.0) * 127.0 + 128.0)
+		var v = int(clampf(samples[i], -1.0, 1.0) * 127.0 + 128.0)
 		data[i] = v
-	var w := AudioStreamWAV.new()
+	var w = AudioStreamWAV.new()
 	w.format = AudioStreamWAV.FORMAT_8_BITS
 	w.mix_rate = MIX_RATE
 	w.stereo = false
@@ -186,48 +186,48 @@ func _wav_bytes(samples: PackedFloat32Array) -> AudioStreamWAV:
 
 
 func _tone(freq: float, dur: float, vol: float, decay: float) -> AudioStreamWAV:
-	var n := int(MIX_RATE * dur)
-	var s := PackedFloat32Array()
+	var n = int(MIX_RATE * dur)
+	var s = PackedFloat32Array()
 	s.resize(n)
 	for i in n:
-		var t := i / MIX_RATE
+		var t = i / MIX_RATE
 		s[i] = sin(t * TAU * freq) * vol * exp(-t * decay)
 	return _wav_bytes(s)
 
 
 func _sweep(f0: float, f1: float, dur: float, vol: float) -> AudioStreamWAV:
-	var n := int(MIX_RATE * dur)
-	var s := PackedFloat32Array()
+	var n = int(MIX_RATE * dur)
+	var s = PackedFloat32Array()
 	s.resize(n)
-	var phase := 0.0
+	var phase = 0.0
 	for i in n:
-		var t := i / MIX_RATE
-		var f := lerpf(f0, f1, t / dur)
+		var t = i / MIX_RATE
+		var f = lerpf(f0, f1, t / dur)
 		phase += TAU * f / MIX_RATE
 		s[i] = sin(phase) * vol * (1.0 - t / dur * 0.6)
 	return _wav_bytes(s)
 
 
 func _noise(dur: float, vol: float) -> AudioStreamWAV:
-	var n := int(MIX_RATE * dur)
-	var s := PackedFloat32Array()
+	var n = int(MIX_RATE * dur)
+	var s = PackedFloat32Array()
 	s.resize(n)
-	var last := 0.0
+	var last = 0.0
 	for i in n:
-		var t := i / MIX_RATE
-		var white := randf() * 2.0 - 1.0
+		var t = i / MIX_RATE
+		var white = randf() * 2.0 - 1.0
 		last = lerpf(last, white, 0.35)
 		s[i] = last * vol * (1.0 - t / dur)
 	return _wav_bytes(s)
 
 
 func _chord(freqs: Array, dur: float, vol: float) -> AudioStreamWAV:
-	var n := int(MIX_RATE * dur)
-	var s := PackedFloat32Array()
+	var n = int(MIX_RATE * dur)
+	var s = PackedFloat32Array()
 	s.resize(n)
 	for i in n:
-		var t := i / MIX_RATE
-		var v := 0.0
+		var t = i / MIX_RATE
+		var v = 0.0
 		for f in freqs:
 			v += sin(t * TAU * float(f))
 		s[i] = v / freqs.size() * vol * exp(-t * 1.2)

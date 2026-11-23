@@ -1,41 +1,39 @@
 extends CharacterBody3D
 
-const SPEED := 5.4
-const REPATH_INTERVAL := 0.45
-const KILL_DIST := 1.35
+const SPEED = 5.4
+const REPATH_INTERVAL = 0.45
+const KILL_DIST = 1.35
 
 var game: Node = null
-var active := false
-var chasing := false
+var active = false
+var chasing = false
 var path: Array = []
-var path_i := 0
-var repath_timer := 0.0
-var stuck_timer := 0.0
-var last_pos := Vector3.ZERO
+var path_i = 0
+var repath_timer = 0.0
+var stuck_timer = 0.0
+var last_pos = Vector3.ZERO
 var limb_l: Node3D = null
 var limb_r: Node3D = null
 var body_mesh: MeshInstance3D = null
 var head: Node3D = null
-var anim_t := 0.0
-var growl_timer := 4.0
+var anim_t = 0.0
+var growl_timer = 4.0
 
 
 func _ready() -> void:
 	game = get_node("/root/Main")
 	_build_model()
 	visible = false
-	monitoring = false
-	monitorable = false
 
 
 func _build_model() -> void:
-	var body_mat := StandardMaterial3D.new()
+	var body_mat = StandardMaterial3D.new()
 	body_mat.albedo_color = Color(0.01, 0.01, 0.012)
 	body_mat.roughness = 1.0
 	body_mat.metallic = 0.0
 
-	var col := CollisionShape3D.new()
-	var cap := CapsuleShape3D.new()
+	var col = CollisionShape3D.new()
+	var cap = CapsuleShape3D.new()
 	cap.radius = 0.38
 	cap.height = 2.3
 	col.shape = cap
@@ -43,7 +41,7 @@ func _build_model() -> void:
 	add_child(col)
 
 	body_mesh = MeshInstance3D.new()
-	var bc := CapsuleMesh.new()
+	var bc = CapsuleMesh.new()
 	bc.radius = 0.34
 	bc.height = 2.25
 	body_mesh.mesh = bc
@@ -54,20 +52,20 @@ func _build_model() -> void:
 	head = Node3D.new()
 	head.position.y = 2.35
 	add_child(head)
-	var skull := MeshInstance3D.new()
-	var sm := SphereMesh.new()
+	var skull = MeshInstance3D.new()
+	var sm = SphereMesh.new()
 	sm.radius = 0.22
 	sm.height = 0.4
 	skull.mesh = sm
 	skull.material_override = body_mat
 	head.add_child(skull)
 	for sx in [-0.09, 0.09]:
-		var eye := MeshInstance3D.new()
-		var em := SphereMesh.new()
+		var eye = MeshInstance3D.new()
+		var em = SphereMesh.new()
 		em.radius = 0.035
 		em.height = 0.07
 		eye.mesh = em
-		var mat := StandardMaterial3D.new()
+		var mat = StandardMaterial3D.new()
 		mat.albedo_color = Color(1, 0.05, 0.05)
 		mat.emission_enabled = true
 		mat.emission = Color(1, 0.02, 0.02)
@@ -78,21 +76,21 @@ func _build_model() -> void:
 
 	limb_l = _limb(Vector3(-0.42, 1.9, 0), 1.5)
 	limb_r = _limb(Vector3(0.42, 1.9, 0), 1.5)
-	var leg_l := _limb(Vector3(-0.2, 0.9, 0), 0.9)
+	var leg_l = _limb(Vector3(-0.2, 0.9, 0), 0.9)
 	leg_l.rotation.z = 0.15
-	var leg_r := _limb(Vector3(0.2, 0.9, 0), 0.9)
+	var leg_r = _limb(Vector3(0.2, 0.9, 0), 0.9)
 	leg_r.rotation.z = -0.15
 
 
 func _limb(pos: Vector3, len: float) -> Node3D:
-	var pivot := Node3D.new()
+	var pivot = Node3D.new()
 	pivot.position = pos
 	add_child(pivot)
-	var m := MeshInstance3D.new()
-	var bm := BoxMesh.new()
+	var m = MeshInstance3D.new()
+	var bm = BoxMesh.new()
 	bm.size = Vector3(0.09, len, 0.09)
 	m.mesh = bm
-	var mat := StandardMaterial3D.new()
+	var mat = StandardMaterial3D.new()
 	mat.albedo_color = Color(0.008, 0.008, 0.01)
 	mat.roughness = 1.0
 	m.material_override = mat
@@ -105,8 +103,7 @@ func activate(player: Node3D) -> void:
 	active = true
 	chasing = true
 	visible = true
-	monitoring = true
-	var back := -player.global_transform.basis.z
+	var back = -player.global_transform.basis.z
 	global_position = player.global_position + back * 3.2 + Vector3(0, 0.1, 0)
 	path = []
 	path_i = 0
@@ -125,7 +122,7 @@ func deactivate() -> void:
 
 
 func _face(target: Vector3) -> void:
-	var d := target - global_position
+	var d = target - global_position
 	d.y = 0
 	if d.length() > 0.01:
 		rotation.y = atan2(-d.x, -d.z)
@@ -146,7 +143,7 @@ func _physics_process(delta: float) -> void:
 			path = game.facility.find_path(global_position, player.global_position)
 			path_i = 0
 
-	var target := player.global_position
+	var target = player.global_position
 	if path_i < path.size():
 		var wp: Dictionary = path[path_i]
 		if wp.has("link") and wp["link"] is Vector3:
@@ -166,10 +163,10 @@ func _physics_process(delta: float) -> void:
 	else:
 		path = []
 
-	var to := Vector3(target.x - global_position.x, 0, target.z - global_position.z)
-	var dist := to.length()
+	var to = Vector3(target.x - global_position.x, 0, target.z - global_position.z)
+	var dist = to.length()
 	if dist > 0.05:
-		var dir := to / dist
+		var dir = to / dist
 		velocity.x = dir.x * SPEED
 		velocity.z = dir.z * SPEED
 		_face(target)
@@ -192,7 +189,7 @@ func _physics_process(delta: float) -> void:
 		stuck_timer = 0.0
 
 	# Kill check.
-	var d := global_position.distance_to(player.global_position)
+	var d = global_position.distance_to(player.global_position)
 	if d < KILL_DIST and absf(global_position.y - player.global_position.y) < 2.0:
 		game.kill_player()
 

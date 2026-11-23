@@ -17,8 +17,8 @@ var win_panel: Control
 var inv_grid: GridContainer
 var inv_detail: Label
 var inv_battery: Label
-var selected_inv := -1
-var settings_from := ""
+var selected_inv = -1
+var settings_from = ""
 var sens_slider: HSlider
 var vol_slider: HSlider
 var lights_check: CheckBox
@@ -40,8 +40,8 @@ func _ready() -> void:
 
 
 func _label(parent: Node, text: String, size: int, color: Color,
-		align := HORIZONTAL_ALIGNMENT_LEFT) -> Label:
-	var l := Label.new()
+		align = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
+	var l = Label.new()
 	l.text = text
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
@@ -54,7 +54,7 @@ func _label(parent: Node, text: String, size: int, color: Color,
 
 
 func _button(parent: Node, text: String, cb: Callable) -> Button:
-	var b := Button.new()
+	var b = Button.new()
 	b.text = text
 	b.custom_minimum_size = Vector2(260, 48)
 	b.add_theme_font_size_override("font_size", 20)
@@ -63,9 +63,9 @@ func _button(parent: Node, text: String, cb: Callable) -> Button:
 	return b
 
 
-func _panel(parent: Node, size := Vector2(720, 480)) -> PanelContainer:
-	var pc := PanelContainer.new()
-	var sb := StyleBoxFlat.new()
+func _panel(parent: Node, size = Vector2(720, 480)) -> PanelContainer:
+	var pc = PanelContainer.new()
+	var sb = StyleBoxFlat.new()
 	sb.bg_color = Color(0.02, 0.03, 0.04, 0.94)
 	sb.border_color = Color(0.2, 0.5, 0.4, 0.8)
 	sb.set_border_width_all(2)
@@ -110,21 +110,21 @@ func _build_menus() -> void:
 	main_menu = Control.new()
 	main_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(main_menu)
-	var dim := ColorRect.new()
+	var dim = ColorRect.new()
 	dim.color = Color(0.0, 0.01, 0.015, 0.82)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	main_menu.add_child(dim)
-	var title := _label(main_menu, "NIGHTMARE BREAKOUT", 72,
+	var title = _label(main_menu, "NIGHTMARE BREAKOUT", 72,
 		Color(0.65, 1.0, 0.75), HORIZONTAL_ALIGNMENT_CENTER)
 	title.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	title.position = Vector2(-500, 120)
 	title.custom_minimum_size = Vector2(1000, 110)
-	var sub := _label(main_menu, "A HORROR ESCAPE", 26, Color(0.4, 0.8, 0.6),
+	var sub = _label(main_menu, "A HORROR ESCAPE", 26, Color(0.4, 0.8, 0.6),
 		HORIZONTAL_ALIGNMENT_CENTER)
 	sub.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	sub.position = Vector2(-400, 230)
 	sub.custom_minimum_size = Vector2(800, 50)
-	var box := VBoxContainer.new()
+	var box = VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_CENTER)
 	box.position = Vector2(-140, 40)
 	box.add_theme_constant_override("separation", 14)
@@ -132,7 +132,7 @@ func _build_menus() -> void:
 	_button(box, "PLAY", func(): game.start_game())
 	_button(box, "SETTINGS", func(): show_settings("main"))
 	_button(box, "QUIT", func(): get_tree().quit())
-	var final := _label(main_menu, "", 22, Color(1.0, 0.8, 0.4),
+	var final = _label(main_menu, "", 22, Color(1.0, 0.8, 0.4),
 		HORIZONTAL_ALIGNMENT_CENTER)
 	final.name = "FinalTime"
 	final.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
@@ -143,16 +143,16 @@ func _build_menus() -> void:
 	pause_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
 	pause_menu.visible = false
 	add_child(pause_menu)
-	var pdim := ColorRect.new()
+	var pdim = ColorRect.new()
 	pdim.color = Color(0, 0, 0, 0.7)
 	pdim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	pause_menu.add_child(pdim)
-	var ptitle := _label(pause_menu, "PAUSED", 54, Color(0.8, 1.0, 0.85),
+	var ptitle = _label(pause_menu, "PAUSED", 54, Color(0.8, 1.0, 0.85),
 		HORIZONTAL_ALIGNMENT_CENTER)
 	ptitle.set_anchors_preset(Control.PRESET_CENTER)
 	ptitle.position = Vector2(-300, -180)
 	ptitle.custom_minimum_size = Vector2(600, 90)
-	var pbox := VBoxContainer.new()
+	var pbox = VBoxContainer.new()
 	pbox.set_anchors_preset(Control.PRESET_CENTER)
 	pbox.position = Vector2(-140, 0)
 	pbox.add_theme_constant_override("separation", 12)
@@ -165,12 +165,12 @@ func _build_menus() -> void:
 	settings_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	settings_panel.visible = false
 	add_child(settings_panel)
-	var sdim := ColorRect.new()
+	var sdim = ColorRect.new()
 	sdim.color = Color(0, 0, 0, 0.75)
 	sdim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	settings_panel.add_child(sdim)
-	var spc := _panel(settings_panel, Vector2(560, 420))
-	var sc := VBoxContainer.new()
+	var spc = _panel(settings_panel, Vector2(560, 420))
+	var sc = VBoxContainer.new()
 	sc.add_theme_constant_override("separation", 16)
 	spc.add_child(sc)
 	_label(sc, "SETTINGS", 34, Color(0.85, 1.0, 0.9), HORIZONTAL_ALIGNMENT_CENTER)
@@ -201,7 +201,7 @@ func _build_menus() -> void:
 	death_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	death_panel.visible = false
 	add_child(death_panel)
-	var dlabel := _label(death_panel, "YOU DIED", 80, Color(0.9, 0.1, 0.1),
+	var dlabel = _label(death_panel, "YOU DIED", 80, Color(0.9, 0.1, 0.1),
 		HORIZONTAL_ALIGNMENT_CENTER)
 	dlabel.set_anchors_preset(Control.PRESET_CENTER)
 	dlabel.position = Vector2(-400, -120)
@@ -211,16 +211,16 @@ func _build_menus() -> void:
 	win_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	win_panel.visible = false
 	add_child(win_panel)
-	var wdim := ColorRect.new()
+	var wdim = ColorRect.new()
 	wdim.color = Color(0.02, 0.08, 0.04, 0.9)
 	wdim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	win_panel.add_child(wdim)
-	var wtitle := _label(win_panel, "YOU ESCAPED", 70, Color(0.4, 1.0, 0.6),
+	var wtitle = _label(win_panel, "YOU ESCAPED", 70, Color(0.4, 1.0, 0.6),
 		HORIZONTAL_ALIGNMENT_CENTER)
 	wtitle.set_anchors_preset(Control.PRESET_CENTER)
 	wtitle.position = Vector2(-400, -160)
 	wtitle.custom_minimum_size = Vector2(800, 110)
-	var wtime := _label(win_panel, "", 28, Color(0.8, 1.0, 0.85),
+	var wtime = _label(win_panel, "", 28, Color(0.8, 1.0, 0.85),
 		HORIZONTAL_ALIGNMENT_CENTER)
 	wtime.name = "WinTime"
 	wtime.set_anchors_preset(Control.PRESET_CENTER)
@@ -234,12 +234,12 @@ func _build_panels() -> void:
 	inventory_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	inventory_panel.visible = false
 	add_child(inventory_panel)
-	var idim := ColorRect.new()
+	var idim = ColorRect.new()
 	idim.color = Color(0, 0, 0, 0.65)
 	idim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	inventory_panel.add_child(idim)
-	var ipc := _panel(inventory_panel, Vector2(860, 520))
-	var iv := VBoxContainer.new()
+	var ipc = _panel(inventory_panel, Vector2(860, 520))
+	var iv = VBoxContainer.new()
 	iv.add_theme_constant_override("separation", 12)
 	ipc.add_child(iv)
 	_label(iv, "INVENTORY", 32, Color(0.85, 1.0, 0.9), HORIZONTAL_ALIGNMENT_CENTER)
@@ -252,25 +252,25 @@ func _build_panels() -> void:
 	inv_detail = _label(iv, "", 18, Color(0.75, 0.9, 0.8))
 	inv_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	inv_detail.custom_minimum_size = Vector2(780, 70)
-	var ib := HBoxContainer.new()
+	var ib = HBoxContainer.new()
 	ib.alignment = BoxContainer.ALIGNMENT_CENTER
 	ib.add_theme_constant_override("separation", 12)
 	iv.add_child(ib)
 	_button(ib, "SELECT / HOLD", func(): game.inventory_select(selected_inv))
 	_button(ib, "DROP", func(): game.inventory_drop(selected_inv))
 	_button(ib, "CHANGE BATTERY", func(): game.inventory_replace_battery())
-	_button(ib, "CLOSE", func(): hide_panels())
+	_button(ib, "CLOSE", func(): hide_all_panels())
 
 	doc_panel = Control.new()
 	doc_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	doc_panel.visible = false
 	add_child(doc_panel)
-	var ddim := ColorRect.new()
+	var ddim = ColorRect.new()
 	ddim.color = Color(0, 0, 0, 0.7)
 	ddim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	doc_panel.add_child(ddim)
-	var dpc := _panel(doc_panel, Vector2(720, 560))
-	var dv := VBoxContainer.new()
+	var dpc = _panel(doc_panel, Vector2(720, 560))
+	var dv = VBoxContainer.new()
 	dv.add_theme_constant_override("separation", 12)
 	dpc.add_child(dv)
 	_label(dv, "DOCUMENT", 30, Color(0.9, 0.95, 0.9), HORIZONTAL_ALIGNMENT_CENTER)
@@ -280,18 +280,18 @@ func _build_panels() -> void:
 	doc_text.add_theme_font_size_override("normal_font_size", 20)
 	doc_text.add_theme_color_override("default_color", Color(0.85, 0.9, 0.85))
 	dv.add_child(doc_text)
-	_button(dv, "CLOSE", func(): hide_panels()).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_button(dv, "CLOSE", func(): hide_all_panels()).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 	term_panel = Control.new()
 	term_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	term_panel.visible = false
 	add_child(term_panel)
-	var tdim := ColorRect.new()
+	var tdim = ColorRect.new()
 	tdim.color = Color(0.005, 0.02, 0.015, 0.85)
 	tdim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	term_panel.add_child(tdim)
-	var tpc := _panel(term_panel, Vector2(900, 620))
-	var tv := VBoxContainer.new()
+	var tpc = _panel(term_panel, Vector2(900, 620))
+	var tv = VBoxContainer.new()
 	tv.add_theme_constant_override("separation", 10)
 	tpc.add_child(tv)
 	_label(tv, "TERMINAL", 30, Color(0.4, 1.0, 0.7), HORIZONTAL_ALIGNMENT_CENTER)
@@ -305,18 +305,18 @@ func _build_panels() -> void:
 	term_buttons = VBoxContainer.new()
 	term_buttons.add_theme_constant_override("separation", 8)
 	tv.add_child(term_buttons)
-	_button(term_buttons, "CLOSE", func(): hide_panels())
+	_button(term_buttons, "CLOSE", func(): hide_all_panels())
 
 	elev_panel = Control.new()
 	elev_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	elev_panel.visible = false
 	add_child(elev_panel)
-	var edim := ColorRect.new()
+	var edim = ColorRect.new()
 	edim.color = Color(0, 0, 0, 0.7)
 	edim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	elev_panel.add_child(edim)
-	var epc := _panel(elev_panel, Vector2(520, 460))
-	var ev := VBoxContainer.new()
+	var epc = _panel(elev_panel, Vector2(520, 460))
+	var ev = VBoxContainer.new()
 	ev.add_theme_constant_override("separation", 12)
 	epc.add_child(ev)
 	_label(ev, "ELEVATOR", 32, Color(0.85, 1.0, 0.9), HORIZONTAL_ALIGNMENT_CENTER)
@@ -324,7 +324,7 @@ func _build_panels() -> void:
 	elev_buttons.add_theme_constant_override("separation", 10)
 	elev_buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	ev.add_child(elev_buttons)
-	_button(ev, "CLOSE", func(): hide_panels()).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_button(ev, "CLOSE", func(): hide_all_panels()).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 
 func show_main_menu() -> void:
@@ -372,7 +372,7 @@ func is_blocking() -> bool:
 		or main_menu.visible
 
 
-func hide_all_panels(resume := true) -> void:
+func hide_all_panels(resume = true) -> void:
 	for p in [inventory_panel, doc_panel, term_panel, elev_panel]:
 		if p:
 			p.visible = false
@@ -399,24 +399,24 @@ func update_prompt(text: String) -> void:
 	prompt_label.visible = text != ""
 
 
-func show_message(text: String, duration := 2.5) -> void:
+func show_message(text: String, duration = 2.5) -> void:
 	msg_label.text = text
 	msg_label.modulate.a = 1.0
-	var tw := create_tween()
+	var tw = create_tween()
 	tw.tween_interval(duration * 0.65)
 	tw.tween_property(msg_label, "modulate:a", 0.0, duration * 0.35)
 
 
-func flash(color: Color, duration := 0.5) -> void:
+func flash(color: Color, duration = 0.5) -> void:
 	fader.color = color
 	fader.modulate.a = 0.9
-	var tw := create_tween()
+	var tw = create_tween()
 	tw.tween_property(fader, "modulate:a", 0.0, duration)
 
 
 func fade_out_then(cb: Callable) -> void:
 	fader.modulate.a = 0.0
-	var tw := create_tween()
+	var tw = create_tween()
 	tw.tween_property(fader, "modulate:a", 1.0, 0.45)
 	tw.tween_callback(cb)
 	tw.tween_interval(0.15)
@@ -431,11 +431,11 @@ func refresh_inventory() -> void:
 	for i in game.inventory.size():
 		var id: String = game.inventory[i]
 		var it: Dictionary = game.ITEMS.get(id, {})
-		var b := Button.new()
+		var b = Button.new()
 		b.text = ("▶ " if i == game.held_index else "  ") + str(it.get("name", id))
 		b.custom_minimum_size = Vector2(240, 52)
 		b.add_theme_font_size_override("font_size", 18)
-		var idx := i
+		var idx = i
 		b.pressed.connect(func(): selected_inv = idx; refresh_inventory())
 		inv_grid.add_child(b)
 	inv_battery.text = "FLASHLIGHT BATTERY: %d%%" % int(game.player.battery_percent) \
@@ -466,14 +466,14 @@ func show_terminal(data: Dictionary) -> void:
 		if c is Button and c.text != "CLOSE":
 			c.queue_free()
 	for a in data.get("actions", []):
-		var b := Button.new()
+		var b = Button.new()
 		b.text = str(a.get("label", "ACTION"))
 		b.custom_minimum_size = Vector2(300, 40)
 		var cb: Callable = a.get("callable", Callable())
 		b.pressed.connect(func():
 			if cb.is_valid():
 				cb.call()
-			hide_panels())
+			hide_all_panels())
 		term_buttons.add_child(b)
 		term_buttons.move_child(b, term_buttons.get_child_count() - 2)
 	show_panel(term_panel)
@@ -487,17 +487,17 @@ func show_elevator(data: Dictionary) -> void:
 	for f in data.get("floors", []):
 		var fname: String = f.get("name", "FLOOR")
 		var idx: int = f.get("index", 0)
-		var b := Button.new()
+		var b = Button.new()
 		b.text = fname
 		b.custom_minimum_size = Vector2(320, 46)
 		b.add_theme_font_size_override("font_size", 20)
 		var eid: String = data.get("id", "")
 		b.pressed.connect(func(): game.travel_elevator(eid, idx))
 		elev_buttons.add_child(b)
-	var close := Button.new()
+	var close = Button.new()
 	close.text = "CLOSE"
 	close.custom_minimum_size = Vector2(320, 40)
-	close.pressed.connect(func(): hide_panels())
+	close.pressed.connect(func(): hide_all_panels())
 	elev_buttons.add_child(close)
 	show_panel(elev_panel)
 

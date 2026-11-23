@@ -1,15 +1,15 @@
 extends CharacterBody3D
 
-const WALK_SPEED := 4.0
-const ACCEL := 12.0
-const FRICTION := 10.0
-const GRAVITY := 18.0
-const JUMP_SPEED := 5.2
-const MOUSE_SENS := 0.0021
-const PITCH_LIMIT := 1.45
-const EYE_HEIGHT := 1.62
-const INTERACT_DIST := 3.4
-const BATTERY_DRAIN_PER_SEC := 100.0 / 60.0
+const WALK_SPEED = 4.0
+const ACCEL = 12.0
+const FRICTION = 10.0
+const GRAVITY = 18.0
+const JUMP_SPEED = 5.2
+const MOUSE_SENS = 0.0021
+const PITCH_LIMIT = 1.45
+const EYE_HEIGHT = 1.62
+const INTERACT_DIST = 3.4
+const BATTERY_DRAIN_PER_SEC = 100.0 / 60.0
 
 @onready var head: Node3D = $Head
 @onready var cam: Camera3D = $Head/Camera3D
@@ -18,17 +18,17 @@ const BATTERY_DRAIN_PER_SEC := 100.0 / 60.0
 @onready var fill: OmniLight3D = $Head/Camera3D/FillLight
 
 var game: Node = null
-var has_flashlight := false
-var flashlight_on := false
-var battery_percent := 0.0
-var shake := 0.0
-var bob_time := 0.0
-var bob_amount := 0.0
-var step_timer := 0.0
+var has_flashlight = false
+var flashlight_on = false
+var battery_percent = 0.0
+var shake = 0.0
+var bob_time = 0.0
+var bob_amount = 0.0
+var step_timer = 0.0
 var current_interact: Dictionary = {}
-var prompt_text := ""
-var frozen := false
-var dead := false
+var prompt_text = ""
+var frozen = false
+var dead = false
 
 
 func _ready() -> void:
@@ -110,8 +110,8 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
-	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
-	var wish := (transform.basis * Vector3(input.x, 0.0, input.y)).normalized() * WALK_SPEED
+	var input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+	var wish = (transform.basis * Vector3(input.x, 0.0, input.y)).normalized() * WALK_SPEED
 	velocity.x = lerpf(velocity.x, wish.x, minf(1.0, ACCEL * delta))
 	velocity.z = lerpf(velocity.z, wish.z, minf(1.0, ACCEL * delta))
 	if not is_on_floor():
@@ -122,7 +122,7 @@ func _physics_process(delta: float) -> void:
 		velocity.y = 0.0
 	move_and_slide()
 
-	var h_speed := Vector2(velocity.x, velocity.z).length()
+	var h_speed = Vector2(velocity.x, velocity.z).length()
 	bob_amount = lerpf(bob_amount, clampf(h_speed / WALK_SPEED, 0.0, 1.2),
 		minf(1.0, 8.0 * delta))
 	bob_time += delta * (4.0 + h_speed * 1.4)
@@ -133,7 +133,7 @@ func _physics_process(delta: float) -> void:
 		step_timer -= delta * h_speed
 		if step_timer <= 0.0:
 			step_timer = 2.6
-			var surface := get_surface()
+			var surface = get_surface()
 			if game.audio:
 				game.audio.play_footstep(surface)
 	else:
@@ -155,16 +155,16 @@ func _process(delta: float) -> void:
 			_apply_torch()
 		elif battery_percent <= 10.0:
 			# Occasional flicker near empty.
-			var n := sin(Time.get_ticks_msec() * 0.09) + sin(Time.get_ticks_msec() * 0.031)
+			var n = sin(Time.get_ticks_msec() * 0.09) + sin(Time.get_ticks_msec() * 0.031)
 			torch.visible = n > -0.2
 			fill.visible = torch.visible
 			if torch.visible:
-				torch.light_energy = randf_range(2.6, 4.2)
+				torch.light_energy = randf_range(3.5, 5.5)
 			else:
 				torch.light_energy = 0.0
 		else:
 			_apply_torch()
-			torch.light_energy = 3.6
+			torch.light_energy = 5.0
 
 
 func update_interact() -> void:
@@ -172,13 +172,13 @@ func update_interact() -> void:
 	prompt_text = ""
 	if not can_control() or not cam:
 		return
-	var space := get_world_3d().direct_space_state
-	var from := cam.global_position
-	var to := from - cam.global_transform.basis.z * INTERACT_DIST
-	var q := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [get_rid()])
+	var space = get_world_3d().direct_space_state
+	var from = cam.global_position
+	var to = from - cam.global_transform.basis.z * INTERACT_DIST
+	var q = PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [get_rid()])
 	q.collide_with_areas = true
 	q.collide_with_bodies = true
-	var hit := space.intersect_ray(q)
+	var hit = space.intersect_ray(q)
 	if hit.is_empty():
 		return
 	var col: Object = hit.get("collider")
@@ -192,11 +192,11 @@ func update_interact() -> void:
 
 
 func get_surface() -> String:
-	var space := get_world_3d().direct_space_state
-	var from := global_position + Vector3(0, 0.5, 0)
-	var to := global_position + Vector3(0, -3.0, 0)
-	var q := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [get_rid()])
-	var hit := space.intersect_ray(q)
+	var space = get_world_3d().direct_space_state
+	var from = global_position + Vector3(0, 0.5, 0)
+	var to = global_position + Vector3(0, -3.0, 0)
+	var q = PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [get_rid()])
+	var hit = space.intersect_ray(q)
 	if hit.is_empty():
 		return "concrete"
 	var col: Object = hit.get("collider")
