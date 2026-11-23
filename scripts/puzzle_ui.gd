@@ -49,6 +49,7 @@ func open(pid: String) -> void:
 		return
 	current_id = pid
 	current = game.puzzles[pid]
+	widgets.clear()
 	run_id += 1
 	for c in content.get_children():
 		if c != status:
@@ -225,12 +226,15 @@ func _pattern_input(idx: int, btns: Array[Button], sol: Array) -> void:
 	widgets["entered"] = entered
 	btns[idx].modulate = Color(0.6, 0.8, 1.0)
 	if entered.size() == sol.size():
-		_finish(entered == sol, "SEQUENCE WRONG — TRY AGAIN")
-		if status.text != "":
+		if entered == sol:
+			_finish(true)
+		else:
 			widgets["entered"] = []
 			for b in btns:
 				b.modulate = Color(1, 1, 1)
-			status.text = ""
+			status.text = "SEQUENCE WRONG — TRY AGAIN"
+			if game.audio:
+				game.audio.play_sfx("puzzle_bad")
 
 
 # ---------------------------------------------------------------
@@ -541,13 +545,6 @@ func _pipes_connected(pieces: Array, rots: Array, shapes: Dictionary) -> bool:
 	for i in pieces.size():
 		cell_dirs.append(_pipe_dirs(pieces[i][0], rots[i]))
 	# adjacency offsets: E=+1 (same row), W=-1, S=+2 (next row), N=-2
-	var neighbors := {
-		0: {1: 1, 2: 2},       # right, down
-		1: {0: 0, 3: 3},       # left, down
-		2: {0: 0, 3: 3},       # right, up? careful
-		3: {1: 1, 2: 2},
-	}
-	# Simpler BFS using coordinates.
 	var coords := [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]
 	var index_of := {}
 	for i in coords.size():
@@ -560,9 +557,6 @@ func _pipes_connected(pieces: Array, rots: Array, shapes: Dictionary) -> bool:
 	while queue.size() > 0:
 		var ci: int = queue.pop_front()
 		var dirs: Array = cell_dirs[ci]
-		# inlet from west of cell0
-		if ci == 0 and 3 in dirs:
-			pass
 		for d in dirs:
 			var np: Vector2i = coords[ci] + delta[d]
 			if index_of.has(np):
@@ -570,8 +564,8 @@ func _pipes_connected(pieces: Array, rots: Array, shapes: Dictionary) -> bool:
 				if not visited[ni] and opp[d] in cell_dirs[ni]:
 					visited[ni] = true
 					queue.append(ni)
-	# outlet east of cell3 requires dir E (1) open on cell3
-	return visited[3] and 1 in cell_dirs[3]
+	# outlet east of cell3 requires dir E (1) open on cell3; inlet west of cell0 needs dir W (3)
+	return (3 in cell_dirs[0]) and visited[3] and (1 in cell_dirs[3])
 
 
 # ---------------------------------------------------------------
