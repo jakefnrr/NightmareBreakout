@@ -16,15 +16,17 @@ func build(g: Node) -> void:
 	_build_shell()
 	_build_room("r1", Rect2(-24, -6, 12, 12), _mat("concrete"), _mat("concrete_dark"), [
 		{"side": "E", "at": 0.0, "door": "door_r1_r2"},
-		{"side": "N", "at": -18.0, "door": "door_r1_ws"},
+		{"side": "E", "at": 3.5, "door": "door_r1_r2_secret"},
 	])
-	_build_room("ws", Rect2(-24, -16, 12, 10), _mat("concrete_dark"), _mat("concrete_dark"), [
-		{"side": "S", "at": -18.0, "door": "door_r1_ws"},
+	_build_room("ws", Rect2(-12, -16, 16, 10), _mat("concrete_dark"), _mat("concrete_dark"), [
+		{"side": "S", "at": -4.0, "door": "door_r2_ws"},
 	])
 	_build_room("r2", Rect2(-12, -6, 16, 12), _mat("wall_paint"), _mat("concrete"), [
 		{"side": "W", "at": 0.0, "door": "door_r1_r2"},
+		{"side": "W", "at": 3.5, "door": "door_r1_r2_secret"},
 		{"side": "E", "at": 0.0, "door": "door_r2_sec"},
 		{"side": "S", "at": -4.0, "door": "door_r2_vg"},
+		{"side": "N", "at": -4.0, "door": "door_r2_ws"},
 	])
 	_build_room("sec", Rect2(4, -6, 12, 12), _mat("metal_dark"), _mat("concrete_dark"), [
 		{"side": "W", "at": 0.0, "door": "door_r2_sec"},
@@ -139,10 +141,12 @@ func _lintel(fixed: float, a0: float, a1: float, horizontal: bool, mat: Material
 
 func _doors() -> void:
 	# id, position, horizontal (N/S wall => panel width along x), req
-	_door("door_r1_r2", Vector3(-12, DOOR_H / 2, 0), true, {})
-	_door("door_r1_ws", Vector3(-18, DOOR_H / 2, -6), false, {"key": "key_room2"})
-	_door("door_r2_sec", Vector3(4, DOOR_H / 2, 0), true, {"cell": "power_cell"})
-	_door("door_r2_vg", Vector3(-4, DOOR_H / 2, 6), false, {"key": "key_vg"})
+	_door("door_r1_r2", Vector3(-12, DOOR_H / 2, 0), false, {"key": "gold_key"})
+	_door("door_r1_r2_secret", Vector3(-12, DOOR_H / 2, 3.5), false, {})
+	game.doors["door_r1_r2_secret"]["mesh"].material_override = _mat("concrete_dark")
+	_door("door_r2_ws", Vector3(-4, DOOR_H / 2, -6), true, {"key": "key_power"})
+	_door("door_r2_sec", Vector3(4, DOOR_H / 2, 0), false, {"cell": "power_cell"})
+	_door("door_r2_vg", Vector3(-4, DOOR_H / 2, 6), true, {"key": "key_vg"})
 
 
 func _door(id: String, pos: Vector3, horizontal: bool, req: Dictionary) -> void:
@@ -179,6 +183,16 @@ func _decorate() -> void:
 	_box(_c("r1", -1.8, -3.8, 0.4), Vector3(1.2, 0.8, 1.2), _mat("crate"), true, "wood")
 	_box(_c("r1", -3.6, -2.0, 0.35), Vector3(1.0, 0.7, 1.0), _mat("crate"), true, "wood")
 	_box(_c("r1", 3.5, 3.5, 0.25), Vector3(2.2, 0.5, 1.2), _mat("sheet"), true, "carpet")
+	# Table in Room 1 (holds the gold key).
+	var tc = _c("r1", 0, -1)
+	_box(Vector3(tc.x, 0.78, tc.z), Vector3(1.7, 0.07, 0.95), _mat("wood"), true, "wood")
+	for sx in [-0.75, 0.75]:
+		for sz in [-0.4, 0.4]:
+			_box(Vector3(tc.x + sx, 0.36, tc.z + sz), Vector3(0.07, 0.72, 0.07), _mat("wood"), false)
+	# Crates hiding the secret door on the east wall.
+	_box(_c("r1", 4.0, 4.2, 0.5), Vector3(1.3, 1.0, 1.3), _mat("crate"), true, "wood")
+	_box(_c("r1", 4.0, 2.6, 0.45), Vector3(1.2, 0.9, 1.1), _mat("crate"), true, "wood")
+	_box(_c("r1", 3.4, 3.4, 0.3), Vector3(0.9, 0.6, 0.9), _mat("crate"), true, "wood")
 	# Main Room 2: desks + shelf + storage.
 	_desk(_c("r2", -4, -3.5))
 	_desk(_c("r2", 3.5, -3.5))
@@ -216,6 +230,10 @@ func _decorate() -> void:
 	_fixture("r2", "fixture_cool")
 	_fixture("ws", "fixture_cool")
 	_fixture("vg", "fixture_purple")
+	# Generous interact zones on desk monitors.
+	for d in [_c("r2", -4, -3.5), _c("r2", 3.5, -3.5), _c("sec", -2.5, -3.0), _c("sec", 2.0, -3.0)]:
+		_zone(Vector3(d.x + 0.4, 1.05, d.z - 0.2), Vector3(1.1, 0.8, 0.9),
+			{"type": "computer", "id": "desk", "prompt": "MONITOR"})
 
 
 func _trims(rid: String) -> void:
@@ -246,13 +264,24 @@ func _fixture(rid: String, key: String) -> void:
 	add_child(mi)
 
 
+func _zone(center: Vector3, size: Vector3, data: Dictionary) -> void:
+	var body = StaticBody3D.new()
+	body.position = center
+	body.set_meta("interact", data)
+	var col = CollisionShape3D.new()
+	var s = BoxShape3D.new(); s.size = size
+	col.shape = s
+	body.add_child(col)
+	add_child(body)
+
+
 func _desk(center: Vector3) -> void:
 	_box(Vector3(center.x, 0.75, center.z), Vector3(1.8, 0.08, 0.9), _mat("wood"), true, "wood")
 	for sx in [-0.8, 0.8]:
 		for sz in [-0.35, 0.35]:
 			_box(Vector3(center.x + sx, 0.35, center.z + sz), Vector3(0.06, 0.7, 0.06), _mat("metal_dark"), false)
 	# Monitor.
-	_box(Vector3(center.x + 0.4, 1.05, center.z - 0.2), Vector3(0.7, 0.5, 0.06), _mat("screen"), false)
+	_box(Vector3(center.x + 0.4, 1.05, center.z - 0.2), Vector3(0.7, 0.5, 0.06), _mat("monitor"), false)
 
 
 func _table(center: Vector3) -> void:

@@ -29,6 +29,7 @@ var current_interact: Dictionary = {}
 var prompt_text = ""
 var frozen = false
 var dead = false
+var held_anchor: Node3D = null
 
 
 func _ready() -> void:
@@ -36,6 +37,27 @@ func _ready() -> void:
 	torch.visible = false
 	if torch_mesh:
 		torch_mesh.visible = false
+	held_anchor = Node3D.new()
+	held_anchor.name = "HeldItem"
+	held_anchor.position = Vector3(0.38, -0.38, -0.6)
+	cam.add_child(held_anchor)
+	update_held_view()
+
+
+func update_held_view() -> void:
+	if held_anchor == null:
+		return
+	for c in held_anchor.get_children():
+		c.queue_free()
+	if game == null or game.held_index < 0 or game.held_index >= game.inventory.size():
+		return
+	var id: String = game.inventory[game.held_index]
+	if id == "flashlight":
+		return  # flashlight has its own viewmodel
+	var m = game._item_mesh(id)
+	m.scale = Vector3.ONE * 1.1
+	m.rotation = Vector3(0.3, 0.6, 0.2)
+	held_anchor.add_child(m)
 
 
 func add_shake(amount: float) -> void:
@@ -97,6 +119,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("flashlight") and not is_echo:
 		toggle_flashlight()
 	elif event.is_action_pressed("inventory") and not is_echo:
+		game.toggle_inventory()
+	elif event is InputEventKey and event.keycode == KEY_Q and event.pressed and not event.echo:
 		game.toggle_inventory()
 	elif event.is_action_pressed("ui_cancel") and not is_echo:
 		game.toggle_pause_or_close()

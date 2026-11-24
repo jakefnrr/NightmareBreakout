@@ -110,14 +110,20 @@ func _build_menus() -> void:
 	main_menu.add_child(dim)
 	var title = _label(main_menu, "NIGHTMARE BREAKOUT", 76,
 		Color(0.65, 1.0, 0.75), HORIZONTAL_ALIGNMENT_CENTER)
-	title.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	title.position = Vector2(-500, 140)
-	title.custom_minimum_size = Vector2(1000, 110)
+	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	title.offset_left = 0
+	title.offset_right = 0
+	title.offset_top = 120
+	title.offset_bottom = 240
+	title.custom_minimum_size = Vector2(0, 120)
 	var sub = _label(main_menu, "A HORROR ESCAPE", 26, Color(0.4, 0.8, 0.6),
 		HORIZONTAL_ALIGNMENT_CENTER)
-	sub.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	sub.position = Vector2(-400, 250)
-	sub.custom_minimum_size = Vector2(800, 50)
+	sub.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	sub.offset_left = 0
+	sub.offset_right = 0
+	sub.offset_top = 250
+	sub.offset_bottom = 300
+	sub.custom_minimum_size = Vector2(0, 50)
 	var box = VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_CENTER)
 	box.position = Vector2(-140, 60)

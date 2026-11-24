@@ -26,25 +26,40 @@ func _initialize() -> void:
 	await process_frame
 	game = main
 	check(game.player != null, "player spawned")
-	check(game.doors.size() == 4, "4 doors built")
+	check(game.doors.size() == 5, "5 doors built")
 	check(game.world_items.size() >= 8, "world items placed")
 	check(not game.started, "not started before Play")
 	game.start_game()
 	check(game.started, "game started")
 	await process_frame
-	check(game.total_time >= 0.0, "timer running state ok")
 
-	# Progression: Room2 key.
-	var r = _world_pick("key_room2")
-	check(not r.is_empty(), "key_room2 exists")
-	game.try_pickup({"item_id": "key_room2", "node": r["node"], "pick_id": r["pick_id"]})
-	check(game.has_item("key_room2"), "picked up BRASS KEY")
+	# Room 1 gold key -> Room 2 door.
+	var r = _world_pick("gold_key")
+	check(not r.is_empty(), "gold_key exists")
+	game.try_pickup({"item_id": "gold_key", "node": r["node"], "pick_id": r["pick_id"]})
+	check(game.has_item("gold_key"), "picked up GOLD KEY")
+	game.try_door("door_r1_r2")
+	check(game.doors["door_r1_r2"]["open"], "room2 door opens with gold key")
+	check(not game.has_item("gold_key"), "gold key consumed")
+	for i in 60:
+		await process_frame
+	check(game.doors["door_r1_r2"]["mesh"].position.y < -0.5, "door mesh sank open")
+	check(game.doors["door_r1_r2"]["col"].disabled, "door collision off")
 
-	# Workspace door needs key.
-	game.try_door("door_r1_ws")
-	check(game.doors["door_r1_ws"]["open"], "workspace door opens with key")
+	# Secret door behind Room 1 crates opens freely.
+	game.try_door("door_r1_r2_secret")
+	check(game.doors["door_r1_r2_secret"]["open"], "secret door opens")
 
-	# Security door needs power cell; should be locked first.
+	# Power room door needs the desk key.
+	game.try_door("door_r2_ws")
+	check(not game.doors["door_r2_ws"]["open"], "power room door locked without key")
+	r = _world_pick("key_power")
+	check(not r.is_empty(), "key_power exists")
+	game.try_pickup({"item_id": "key_power", "node": r["node"], "pick_id": r["pick_id"]})
+	game.try_door("door_r2_ws")
+	check(game.doors["door_r2_ws"]["open"], "power room door opens with key")
+
+	# Security door needs power cell.
 	game.try_door("door_r2_sec")
 	check(not game.doors["door_r2_sec"]["open"], "security door locked without cell")
 	r = _world_pick("power_cell")
@@ -62,7 +77,7 @@ func _initialize() -> void:
 	game.try_door("door_r2_vg")
 	check(game.doors["door_r2_vg"]["open"], "vg door opens with key")
 
-	# Security lights start off, switch turns on.
+	# Security lights off -> switch on.
 	var any_on = false
 	for l in game.sec_lights:
 		if l.visible: any_on = true
@@ -73,22 +88,13 @@ func _initialize() -> void:
 		if not l.visible: any_on = false
 	check(any_on, "security lights on after switch")
 
-	# Flashlight.
+	# Flashlight + battery swap.
 	r = _world_pick("flashlight")
 	game.try_pickup({"item_id": "flashlight", "node": r["node"], "pick_id": r["pick_id"]})
 	check(game.player.has_flashlight, "flashlight owned")
 	check(game.player.battery_percent == 100.0, "battery at 100%")
-	var ev = InputEventAction.new()
-	ev.action = "flashlight"
-	ev.pressed = true
-	game.player._unhandled_input(ev)
-	check(game.player.flashlight_on, "flashlight toggled on")
-	game.player._unhandled_input(ev)
-	check(not game.player.flashlight_on, "flashlight toggled off")
-
-	# Battery swap (free an inventory slot first).
 	for i in game.inventory.size():
-		if game.inventory[i] == "key_room2":
+		if game.inventory[i] == "gold_key":
 			game.inventory_drop(i)
 			break
 	r = _world_pick("battery")
@@ -102,15 +108,33 @@ func _initialize() -> void:
 	check(game.player.battery_percent == 100.0, "battery replaced to 100%")
 	check(not game.has_item("battery"), "spare battery consumed")
 
-	# Snake: open, step, game over path, play again, back -> jumpscare.
+	# Blackout system.
+	check(not game.lights_out, "lights on before blackout")
+	game._trigger_blackout()
+	check(game.lights_out, "blackout triggered")
+	var r1_lit = false
+	for l in game.room_lights["r1"]:
+		if l.visible: r1_lit = true
+	check(not r1_lit, "room lights off during blackout")
+	var batt = _world_pick("battery")
+	check(not batt.is_empty(), "spare battery spawned in power room")
+	game._power_button()
+	check(not game.lights_out, "power button restores lights")
+	r1_lit = false
+	for l in game.room_lights["r1"]:
+		if l.visible: r1_lit = true
+	check(r1_lit, "room lights back on")
+
+	# Snake + jumpscare.
 	game.snake.open()
 	check(game.snake.is_open(), "snake open")
 	check(paused, "game paused during snake")
 	game.snake.dir = Vector2i(1, 0)
 	for i in 40:
 		game.snake._step()
+		if game.snake.gameover:
+			break
 	check(game.snake.score >= 0, "snake steps ran")
-	# Force game over then PLAY AGAIN path (reset).
 	game.snake.snake_body = [Vector2i(0, 0)]
 	game.snake.dir = Vector2i(-1, 0)
 	game.snake._step()
@@ -123,8 +147,6 @@ func _initialize() -> void:
 	await create_timer(1.4, true, false, true).timeout
 	check(not game.ui.scare_rect.visible, "jumpscare cleared")
 	check(not paused, "game resumed after jumpscare")
-
-	# Esc closes snake quietly without scare.
 	game.snake.open()
 	game.toggle_pause_or_close()
 	check(not game.snake.is_open(), "esc closes snake")

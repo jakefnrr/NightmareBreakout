@@ -29,13 +29,17 @@ var stopwatch_label: Label3D = null
 var panel_count := 0
 var sec_lights: Array = []
 var sec_on := false
+var room_lights := {}
+var lights_out := false
+var blackout_timer := 0.0
 var scare_tex: Texture2D = null
 
 const ITEMS := {
 	"flashlight": {"name": "FLASHLIGHT", "type": "flashlight", "desc": "A heavy tactical flashlight. Press F to toggle. Battery drains only while ON."},
 	"battery": {"name": "BATTERY", "type": "battery", "desc": "Spare battery for the flashlight. Only one spare can be carried."},
 	"power_cell": {"name": "POWER CELL", "type": "powercell", "desc": "A charged power cell. The Security Room door consumes one."},
-	"key_room2": {"name": "BRASS KEY", "type": "key", "desc": "Heavy brass key. Opens the Workspace door in Main Room 1."},
+	"gold_key": {"name": "GOLD KEY", "type": "key", "desc": "A heavy gold key. Opens the door to Main Room 2."},
+	"key_power": {"name": "STORAGE KEY", "type": "key", "desc": "A small brass key. Opens the Power Room door in Room 2."},
 	"key_vg": {"name": "SECURITY KEY", "type": "key", "desc": "Security keycard-style key. Opens the Video Game Room door."},
 }
 
@@ -145,6 +149,7 @@ func _make_materials() -> void:
 	mats["fixture_cool"] = _mat(Color(0.85, 0.95, 1), 0.4, 0.0, Color(0.65, 0.85, 1), 2.2)
 	mats["fixture_purple"] = _mat(Color(0.8, 0.6, 1), 0.4, 0.0, Color(0.6, 0.35, 1), 2.2)
 	mats["fixture_green"] = _mat(Color(0.6, 1, 0.7), 0.4, 0.0, Color(0.35, 1, 0.55), 2.2)
+	mats["monitor"] = _mat(Color(0.03, 0.05, 0.08), 0.25, 0.3, Color(0.08, 0.22, 0.4), 0.5)
 
 
 func _build_environment() -> void:
@@ -192,8 +197,17 @@ func _item_mesh(item_id: String) -> MeshInstance3D:
 	var mi = MeshInstance3D.new()
 	match ITEMS[item_id]["type"]:
 		"key":
-			var bm = BoxMesh.new(); bm.size = Vector3(0.28, 0.04, 0.1); mi.mesh = bm
+			var bm = BoxMesh.new(); bm.size = Vector3(0.3, 0.04, 0.1); mi.mesh = bm
 			mi.material_override = mats["key_gold"]
+			var ring = MeshInstance3D.new()
+			var tm = TorusMesh.new()
+			tm.inner_radius = 0.045; tm.outer_radius = 0.11
+			tm.rings = 12; tm.ring_segments = 8
+			ring.mesh = tm
+			ring.material_override = mats["key_gold"]
+			ring.position = Vector3(-0.14, 0, 0)
+			ring.rotation.y = PI / 2
+			mi.add_child(ring)
 		"battery":
 			var cm = CylinderMesh.new(); cm.top_radius = 0.07; cm.bottom_radius = 0.07; cm.height = 0.22; mi.mesh = cm
 			mi.material_override = mats["battery_green"]
@@ -239,8 +253,10 @@ func _room_pos(rid: String, dx: float, dz: float, y := 0.9) -> Vector3:
 
 
 func _setup_content() -> void:
-	# Main Room 2 key.
-	_world_item("key_room2", _room_pos("r2", -4.0, -3.5, 0.95))
+	# Gold key on the Room 1 table.
+	_world_item("gold_key", _room_pos("r1", 0.0, -1.0, 0.92))
+	# Storage key on a Room 2 desk (opens the Power Room door).
+	_world_item("key_power", _room_pos("r2", -4.0, -3.5, 0.95))
 	# Workspace supplies.
 	_world_item("flashlight", _room_pos("ws", 0.0, 0.0, 0.95))
 	_world_item("battery", _room_pos("ws", -2.0, -2.0, 0.95))
@@ -261,10 +277,30 @@ func _setup_content() -> void:
 	_prop_box(ap + Vector3(0, 1.1, 0), Vector3(1.1, 2.2, 0.8), mats["machine_dark"],
 		{"type": "arcade", "id": "arcade", "prompt": "PLAY"})
 	_prop_box(ap + Vector3(0, 1.7, 0.45), Vector3(0.8, 0.6, 0.05), mats["screen"], {}, false)
+	# Power button on the Power Room wall.
+	_prop_box(Vector3(3.72, 1.4, -8.0), Vector3(0.12, 0.35, 0.5), mats["hazard"],
+		{"type": "power_button", "id": "main", "prompt": "POWER BUTTON"})
+	# Generous interact zones for arcade + security terminal.
+	var ap2 = _room_pos("vg", 5.0, -2.0, 1.1)
+	_zone(ap2, Vector3(2.1, 2.4, 1.5), {"type": "arcade", "id": "arcade", "prompt": "PLAY"})
+	_zone(_room_pos("sec", 2.0, -3.0, 1.1), Vector3(1.7, 1.2, 1.0),
+		{"type": "computer", "id": "sec_pc", "prompt": "USE TERMINAL"})
 	# Stopwatch in Main Room 1.
 	_stopwatch(_room_pos("r1", 3.0, 3.0, 0.0))
-	# Wall map in Main Room 1 (west wall).
-	_map_board(Vector3(-23.62, 1.9, 0), PI / 2)
+	# Wall map in Main Room 1, on the east wall next to the exit door.
+	_map_board(Vector3(-12.1, 1.9, -3.6), -PI / 2)
+
+
+func _zone(center: Vector3, size: Vector3, data: Dictionary) -> void:
+	var body = StaticBody3D.new()
+	body.position = center
+	body.set_meta("interact", data)
+	var col = CollisionShape3D.new()
+	var s = BoxShape3D.new(); s.size = size
+	col.shape = s
+	col.name = "Col"
+	body.add_child(col)
+	add_child(body)
 
 
 func _stopwatch(pos: Vector3) -> void:
@@ -295,14 +331,42 @@ func _map_board(pos: Vector3, rot_y: float) -> void:
 		var x = ox + (r.position.x - bx) * sx
 		var y = oy + (r.position.y - bz) * sz
 		img.fill_rect(Rect2i(int(x), int(y), int(r.size.x * sx), int(r.size.y * sz)), rooms_draw[rid])
+	# Door markers at their true positions.
+	for did in doors:
+		var rec: Dictionary = doors[did]
+		var dp: Vector3 = rec["node"].position
+		var dx = int(ox + (dp.x - bx) * sx)
+		var dy = int(oy + (dp.z - bz) * sz)
+		img.fill_rect(Rect2i(dx - 5, dy - 5, 10, 10), Color(1, 1, 1))
+	img.flip_x()
 	var tex = ImageTexture.create_from_image(img)
 	var pm = MeshInstance3D.new()
-	var plane = PlaneMesh.new(); plane.size = Vector2(4.2, 3.15)
+	var plane = PlaneMesh.new(); plane.size = Vector2(4.8, 3.6)
 	pm.mesh = plane
 	pm.material_override = _mat(Color(1, 1, 1), 0.8, 0.0, Color(0.1, 0.2, 0.15), 0.6, tex, 1.0)
 	pm.position = pos
 	pm.rotation.y = rot_y
 	add_child(pm)
+	# Room labels on the map.
+	var names = {"r1": "ROOM 1", "ws": "POWER", "r2": "ROOM 2", "sec": "SECURITY", "vg": "ARCADE"}
+	var pw = 4.8; var ph = 3.6
+	for rid in names:
+		var r: Rect2 = level.room_rect(rid)
+		var rcx = r.position.x + r.size.x / 2
+		var rcz = r.position.y + r.size.y / 2
+		var ix = ox + (rcx - bx) * sx
+		var iy = oy + (rcz - bz) * sz
+		var lx = (0.5 - ix / 1024.0) * pw
+		var ly = (0.5 - iy / 768.0) * ph
+		var lbl = Label3D.new()
+		lbl.text = names[rid]
+		lbl.font_size = 64
+		lbl.pixel_size = 0.0035
+		lbl.modulate = Color(1, 1, 1, 0.95)
+		lbl.no_depth_test = true
+		lbl.position = pos + Vector3(-0.07, ly, lx)
+		lbl.rotation.y = rot_y
+		add_child(lbl)
 
 
 # ---------------------------------------------------------------
@@ -321,16 +385,25 @@ func _omni(pos: Vector3, color: Color, energy: float, rng_m: float) -> OmniLight
 	return l
 
 
+func _room_light(rid: String, pos: Vector3, color: Color, energy: float, rng_m: float) -> OmniLight3D:
+	var l = _omni(pos, color, energy, rng_m)
+	if not room_lights.has(rid):
+		room_lights[rid] = []
+	room_lights[rid].append(l)
+	lights.append(l)
+	return l
+
+
 func _setup_lighting() -> void:
-	# Main Room 1: moody warm.
-	lights.append(_omni(level.room_center("r1") + Vector3(0, 2.7, 0), Color(1, 0.82, 0.6), 0.95, 10))
+	# Main Room 1: moody warm (two fixtures for coverage).
+	_room_light("r1", level.room_center("r1") + Vector3(0, 2.7, 0), Color(1, 0.82, 0.6), 0.95, 10)
+	_room_light("r1", level.room_center("r1") + Vector3(-2, 2.7, -3), Color(1, 0.7, 0.5), 0.6, 7)
 	# Main Room 2: neutral.
-	var l2 = _omni(level.room_center("r2") + Vector3(0, 2.7, 0), Color(0.85, 0.92, 1.0), 1.15, 11)
-	lights.append(l2)
-	# Workspace: cool work light.
-	lights.append(_omni(level.room_center("ws") + Vector3(0, 2.7, 0), Color(0.75, 0.88, 1.0), 1.0, 10))
+	_room_light("r2", level.room_center("r2") + Vector3(0, 2.7, 0), Color(0.85, 0.92, 1.0), 1.15, 11)
+	# Power Room: cool work light.
+	_room_light("ws", level.room_center("ws") + Vector3(0, 2.7, 0), Color(0.75, 0.88, 1.0), 1.0, 10)
 	# Video Game Room: purple arcade glow.
-	lights.append(_omni(level.room_center("vg") + Vector3(0, 2.6, 0), Color(0.65, 0.45, 1.0), 1.0, 11))
+	_room_light("vg", level.room_center("vg") + Vector3(0, 2.6, 0), Color(0.65, 0.45, 1.0), 1.0, 11)
 	# Security room: OFF until switch. Two fixtures + faint emergency.
 	var sr = level.room_rect("sec")
 	for i in 2:
@@ -339,15 +412,44 @@ func _setup_lighting() -> void:
 		var l = _omni(Vector3(fx, 2.9, fz), Color(0.45, 1.0, 0.6), 1.25, 10)
 		l.visible = false
 		sec_lights.append(l)
+		if not room_lights.has("sec"):
+			room_lights["sec"] = []
+		room_lights["sec"].append(l)
 		lights.append(l)
 	var emerg = _omni(level.room_center("sec") + Vector3(0, 2.8, 0), Color(1, 0.15, 0.1), 0.12, 8)
 	lights.append(emerg)
 
 
+func _trigger_blackout() -> void:
+	lights_out = true
+	blackout_timer = randf_range(45.0, 90.0)
+	for rid in room_lights:
+		for l in room_lights[rid]:
+			l.visible = false
+	# A spare battery always appears in the Power Room.
+	_world_item("battery", _room_pos("ws", randf_range(-4.0, 4.0), randf_range(-3.0, 3.0), 0.95))
+	if audio: audio.play_sfx("power_down")
+	ui.show_message("POWER FAILURE — GO TO THE POWER ROOM", 4.0)
+
+
+func _power_button() -> void:
+	if lights_out:
+		lights_out = false
+		blackout_timer = randf_range(50.0, 95.0)
+		for rid in room_lights:
+			for l in room_lights[rid]:
+				l.visible = (rid != "sec") or sec_on
+		if audio: audio.play_sfx("power_up")
+		ui.show_message("POWER RESTORED", 2.0)
+	else:
+		if audio: audio.play_sfx("ui_click")
+		ui.show_message("POWER NOMINAL", 1.6)
+
+
 func _toggle_security_lights() -> void:
 	sec_on = not sec_on
 	for l in sec_lights:
-		l.visible = sec_on
+		l.visible = sec_on and not lights_out
 	if audio:
 		audio.play_sfx("power_up" if sec_on else "power_down")
 	ui.show_message("LIGHTS ON" if sec_on else "LIGHTS OFF", 1.6)
@@ -476,6 +578,8 @@ func add_item(item_id: String) -> bool:
 	held_index = inventory.size() - 1
 	if ui.inventory_panel.visible:
 		ui.refresh_inventory()
+	if player:
+		player.update_held_view()
 	return true
 
 
@@ -487,6 +591,8 @@ func remove_item(item_id: String) -> bool:
 				held_index = inventory.size() - 1
 			if ui.inventory_panel.visible:
 				ui.refresh_inventory()
+			if player:
+				player.update_held_view()
 			return true
 	return false
 
@@ -501,6 +607,8 @@ func try_pickup(data: Dictionary) -> void:
 	if item_id == "flashlight":
 		player.set_flashlight_owned(true)
 		player.set_battery(100.0)
+		if blackout_timer <= 0.0:
+			blackout_timer = randf_range(50.0, 95.0)
 	if node != null and dropped_nodes.has(node):
 		dropped_nodes.erase(node)
 		node.queue_free()
@@ -525,6 +633,8 @@ func inventory_select(i: int) -> void:
 		return
 	held_index = i
 	ui.refresh_inventory()
+	if player:
+		player.update_held_view()
 
 
 func inventory_drop(i: int) -> void:
@@ -540,6 +650,8 @@ func inventory_drop(i: int) -> void:
 	if audio:
 		audio.play_sfx("drop")
 	ui.refresh_inventory()
+	if player:
+		player.update_held_view()
 
 
 func inventory_replace_battery() -> void:
@@ -561,6 +673,8 @@ func inventory_replace_battery() -> void:
 		audio.play_sfx("keycard")
 	ui.show_message("BATTERY REPLACED", 2.0)
 	ui.refresh_inventory()
+	if player:
+		player.update_held_view()
 
 
 func _spawn_dropped(item_id: String) -> void:
@@ -589,19 +703,20 @@ func get_prompt(data: Dictionary) -> String:
 	var t: String = data.get("type", "")
 	match t:
 		"pickup":
-			return "E — " + str(ITEMS.get(data.get("item_id", ""), {}).get("name", "PICK UP"))
+			return "[E] PICK UP " + str(ITEMS.get(data.get("item_id", ""), {}).get("name", "ITEM"))
 		"door":
 			var rec: Dictionary = doors.get(data.get("id", ""), {})
 			if rec.get("open", false):
 				return ""
 			var req: Dictionary = rec.get("req", {})
 			if req.size() == 0:
-				return "E — OPEN"
-			return "LOCKED — " + _req_text(req)
-		"switch": return "E — LIGHT SWITCH"
-		"arcade": return "E — PLAY"
-		"computer": return "E — USE TERMINAL"
-		_: return str(data.get("prompt", "E — INTERACT"))
+				return "[E] OPEN"
+			return "[E] LOCKED — " + _req_text(req)
+		"switch": return "[E] LIGHT SWITCH"
+		"arcade": return "[E] PLAY"
+		"computer": return "[E] USE " + str(data.get("prompt", "TERMINAL"))
+		"power_button": return "[E] POWER BUTTON"
+		_: return "[E] " + str(data.get("prompt", "INTERACT"))
 
 
 func _req_text(req: Dictionary) -> String:
@@ -618,6 +733,7 @@ func interact(data: Dictionary) -> void:
 		"pickup": try_pickup(data)
 		"door": try_door(str(data.get("id", "")))
 		"switch": _toggle_security_lights()
+		"power_button": _power_button()
 		"arcade": open_snake()
 		"computer": open_computer(str(data.get("id", "")))
 
@@ -639,6 +755,13 @@ func try_door(id: String) -> void:
 		return
 	if req.has("cell"):
 		remove_item(req["cell"])
+	if req.has("key"):
+		remove_item(req["key"])
+		rec["open"] = true
+		_set_door_open(rec)
+		if audio: audio.play_sfx("door_open")
+		ui.show_message(str(ITEMS[req["key"]]["name"]) + " USED", 1.5)
+		return
 	rec["open"] = true
 	_set_door_open(rec)
 	if audio: audio.play_sfx("door_open")
@@ -646,17 +769,26 @@ func try_door(id: String) -> void:
 
 func _set_door_open(rec: Dictionary) -> void:
 	var col: CollisionShape3D = rec["col"]
+	col.disabled = true
 	col.set_deferred("disabled", true)
+	var dbody: StaticBody3D = rec["node"]
+	dbody.collision_layer = 0
+	dbody.collision_mask = 0
 	var mesh: MeshInstance3D = rec["mesh"]
 	var tw = create_tween()
-	tw.tween_property(mesh, "position:y", mesh.position.y - 2.6, 0.7)\
+	tw.tween_property(mesh, "position:y", mesh.position.y - 2.6, 0.35)\
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func(): mesh.visible = false)
 
 
 func open_computer(cid: String) -> void:
 	if cid == "sec_pc":
 		ui.show_document("SECURITY TERMINAL",
 			"CAMERA NETWORK: OFFLINE\nDOOR LOG: SEALED\n\nA note is pinned to the monitor:\n\n'The thing in the sub-basement still walks the halls at night. Do not answer the arcade machine after dark.'")
+		if audio: audio.play_sfx("document")
+	elif cid == "desk":
+		ui.show_document("MONITOR",
+			"NO SIGNAL\n\nThe screen flickers once, then goes dark.\nNothing useful here — just an old terminal.")
 		if audio: audio.play_sfx("document")
 
 
@@ -683,6 +815,12 @@ func _process(delta: float) -> void:
 		total_time += delta
 	if stopwatch_label:
 		stopwatch_label.text = format_time(total_time)
+	# Random blackouts once the player has the flashlight.
+	if started and not get_tree().paused and not ui_blocking() \
+			and player.has_flashlight and not lights_out:
+		blackout_timer -= delta
+		if blackout_timer <= 0.0:
+			_trigger_blackout()
 	# Prompt
 	if player and ui:
 		ui.update_prompt(player.prompt_text if is_playing() and not ui_blocking() else "")
