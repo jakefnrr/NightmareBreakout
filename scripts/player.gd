@@ -49,11 +49,15 @@ func update_held_view() -> void:
 		return
 	for c in held_anchor.get_children():
 		c.queue_free()
-	if game == null or game.held_index < 0 or game.held_index >= game.inventory.size():
+	var id := ""
+	if game != null and game.held_index >= 0 and game.held_index < game.inventory.size():
+		id = game.inventory[game.held_index]
+	# Only ONE thing shows in hand: the flashlight viewmodel appears only
+	# when the flashlight itself (or nothing) is selected.
+	if torch_mesh:
+		torch_mesh.visible = has_flashlight and (id == "" or id == "flashlight")
+	if id == "" or id == "flashlight" or game == null:
 		return
-	var id: String = game.inventory[game.held_index]
-	if id == "flashlight":
-		return  # flashlight has its own viewmodel
 	var m = game._item_mesh(id)
 	m.scale = Vector3.ONE * 1.1
 	m.rotation = Vector3(0.3, 0.6, 0.2)

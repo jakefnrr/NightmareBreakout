@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 var game: Node = null
+var ui_font: Font = null
 var open_flag = false
 var gameover = false
 var score = 0
@@ -23,6 +24,8 @@ var go_label: Label
 
 func _ready() -> void:
 	game = get_node("/root/Main")
+	ui_font = SystemFont.new()
+	ui_font.font_names = ["Helvetica Neue", "Helvetica", "Arial", "DejaVu Sans", "sans-serif"]
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 30
 	_build()
@@ -52,12 +55,14 @@ func _build() -> void:
 	var title = Label.new()
 	title.text = "SNAKE"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 34)
+	title.add_theme_font_size_override("font_size", 42)
+	title.add_theme_font_override("font", ui_font)
 	title.add_theme_color_override("font_color", Color(0.5, 1.0, 0.6))
 	v.add_child(title)
 	score_label = Label.new()
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	score_label.add_theme_font_size_override("font_size", 22)
+	score_label.add_theme_font_size_override("font_size", 34)
+	score_label.add_theme_font_override("font", ui_font)
 	score_label.add_theme_color_override("font_color", Color(0.9, 0.95, 0.9))
 	v.add_child(score_label)
 	board_box = Control.new()
@@ -78,7 +83,8 @@ func _build() -> void:
 	var hint = Label.new()
 	hint.text = "ARROWS / WASD TO MOVE"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", 16)
+	hint.add_theme_font_size_override("font_size", 21)
+	hint.add_theme_font_override("font", ui_font)
 	hint.add_theme_color_override("font_color", Color(0.6, 0.8, 0.65))
 	v.add_child(hint)
 	go_box = VBoxContainer.new()
@@ -89,7 +95,8 @@ func _build() -> void:
 	go_label = Label.new()
 	go_label.text = "GAME OVER"
 	go_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	go_label.add_theme_font_size_override("font_size", 30)
+	go_label.add_theme_font_size_override("font_size", 38)
+	go_label.add_theme_font_override("font", ui_font)
 	go_label.add_theme_color_override("font_color", Color(1, 0.4, 0.3))
 	go_box.add_child(go_label)
 	var row = HBoxContainer.new()
@@ -99,13 +106,15 @@ func _build() -> void:
 	var b1 = Button.new()
 	b1.text = "PLAY AGAIN"
 	b1.custom_minimum_size = Vector2(160, 44)
-	b1.add_theme_font_size_override("font_size", 18)
+	b1.add_theme_font_size_override("font_size", 23)
+	b1.add_theme_font_override("font", ui_font)
 	b1.pressed.connect(func(): reset())
 	row.add_child(b1)
 	var b2 = Button.new()
 	b2.text = "BACK"
 	b2.custom_minimum_size = Vector2(160, 44)
-	b2.add_theme_font_size_override("font_size", 18)
+	b2.add_theme_font_size_override("font_size", 23)
+	b2.add_theme_font_override("font", ui_font)
 	b2.pressed.connect(func(): back())
 	row.add_child(b2)
 

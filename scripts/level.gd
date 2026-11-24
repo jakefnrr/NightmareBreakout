@@ -14,29 +14,28 @@ var sec_fixtures := []
 func build(g: Node) -> void:
 	game = g
 	_build_shell()
-	_build_room("r1", Rect2(-24, -6, 12, 12), _mat("concrete"), _mat("concrete_dark"), [
-		{"side": "E", "at": 0.0, "door": "door_r1_r2"},
-		{"side": "E", "at": 3.5, "door": "door_r1_r2_secret"},
+	_build_room("start", Rect2(-24, -6, 12, 12), _mat("concrete"), _mat("concrete_dark"), [
+		{"side": "E", "at": 0.0, "door": "door_start_main"},
+		{"side": "N", "at": -18.0, "door": "door_exit"},
 	])
-	_build_room("ws", Rect2(-12, -16, 16, 10), _mat("concrete_dark"), _mat("concrete_dark"), [
-		{"side": "S", "at": -4.0, "door": "door_r2_ws"},
+	_build_room("main", Rect2(-12, -6, 16, 12), _mat("wall_paint"), _mat("concrete"), [
+		{"side": "W", "at": 0.0, "door": "door_start_main"},
+		{"side": "N", "at": -4.0, "door": "door_main_power"},
+		{"side": "E", "at": 0.0, "door": "door_main_storage"},
+		{"side": "S", "at": -4.0, "door": "door_main_arcade"},
 	])
-	_build_room("r2", Rect2(-12, -6, 16, 12), _mat("wall_paint"), _mat("concrete"), [
-		{"side": "W", "at": 0.0, "door": "door_r1_r2"},
-		{"side": "W", "at": 3.5, "door": "door_r1_r2_secret"},
-		{"side": "E", "at": 0.0, "door": "door_r2_sec"},
-		{"side": "S", "at": -4.0, "door": "door_r2_vg"},
-		{"side": "N", "at": -4.0, "door": "door_r2_ws"},
+	_build_room("power", Rect2(-12, -16, 16, 10), _mat("concrete_dark"), _mat("concrete_dark"), [
+		{"side": "S", "at": -4.0, "door": "door_main_power"},
 	])
-	_build_room("sec", Rect2(4, -6, 12, 12), _mat("metal_dark"), _mat("concrete_dark"), [
-		{"side": "W", "at": 0.0, "door": "door_r2_sec"},
+	_build_room("arcade", Rect2(-12, 6, 16, 8), _mat("wall_paint"), _mat("tile"), [
+		{"side": "N", "at": -4.0, "door": "door_main_arcade"},
 	])
-	_build_room("vg", Rect2(-12, 6, 16, 8), _mat("wall_paint"), _mat("tile"), [
-		{"side": "N", "at": -4.0, "door": "door_r2_vg"},
+	_build_room("storage", Rect2(4, -6, 12, 12), _mat("concrete_dark"), _mat("concrete_dark"), [
+		{"side": "W", "at": 0.0, "door": "door_main_storage"},
 	])
 	_decorate()
+	_closet()
 	_doors()
-	_security_fixtures()
 
 
 func _mat(key: String) -> Material:
@@ -141,12 +140,12 @@ func _lintel(fixed: float, a0: float, a1: float, horizontal: bool, mat: Material
 
 func _doors() -> void:
 	# id, position, horizontal (N/S wall => panel width along x), req
-	_door("door_r1_r2", Vector3(-12, DOOR_H / 2, 0), false, {"key": "gold_key"})
-	_door("door_r1_r2_secret", Vector3(-12, DOOR_H / 2, 3.5), false, {})
-	game.doors["door_r1_r2_secret"]["mesh"].material_override = _mat("concrete_dark")
-	_door("door_r2_ws", Vector3(-4, DOOR_H / 2, -6), true, {"key": "key_power"})
-	_door("door_r2_sec", Vector3(4, DOOR_H / 2, 0), false, {"cell": "power_cell"})
-	_door("door_r2_vg", Vector3(-4, DOOR_H / 2, 6), true, {"key": "key_vg"})
+	_door("door_start_main", Vector3(-12, DOOR_H / 2, 0), false, {"key": "gold_key"})
+	_door("door_main_power", Vector3(-4, DOOR_H / 2, -6), true, {"key": "key_power"})
+	_door("door_main_arcade", Vector3(-4, DOOR_H / 2, 6), true, {"key": "key_arcade"})
+	_door("door_main_storage", Vector3(4, DOOR_H / 2, 0), false, {"key": "key_storage"})
+	_door("door_storage_cell", Vector3(13.4, DOOR_H / 2, 0), false, {"cell": "power_cell"})
+	_door("door_exit", Vector3(-18, DOOR_H / 2, -6), true, {"key": "key_final"})
 
 
 func _door(id: String, pos: Vector3, horizontal: bool, req: Dictionary) -> void:
@@ -178,62 +177,117 @@ func _c(r: String, dx: float, dz: float, y := 0.0) -> Vector3:
 
 
 func _decorate() -> void:
-	# Main Room 1: storage boxes + mattress.
-	_box(_c("r1", -3.5, -3.5, 0.5), Vector3(1.4, 1.0, 1.4), _mat("crate"), true, "wood")
-	_box(_c("r1", -1.8, -3.8, 0.4), Vector3(1.2, 0.8, 1.2), _mat("crate"), true, "wood")
-	_box(_c("r1", -3.6, -2.0, 0.35), Vector3(1.0, 0.7, 1.0), _mat("crate"), true, "wood")
-	_box(_c("r1", 3.5, 3.5, 0.25), Vector3(2.2, 0.5, 1.2), _mat("sheet"), true, "carpet")
-	# Table in Room 1 (holds the gold key).
-	var tc = _c("r1", 0, -1)
+	# STARTING ROOM: boxes, table (gold key), mattress.
+	_box(_c("start", -3.5, -3.5, 0.5), Vector3(1.4, 1.0, 1.4), _mat("crate"), true, "wood")
+	_box(_c("start", -1.8, -3.8, 0.4), Vector3(1.2, 0.8, 1.2), _mat("crate"), true, "wood")
+	_box(_c("start", -3.6, -2.0, 0.35), Vector3(1.0, 0.7, 1.0), _mat("crate"), true, "wood")
+	_box(_c("start", 3.5, 3.5, 0.25), Vector3(2.2, 0.5, 1.2), _mat("sheet"), true, "carpet")
+	var tc = _c("start", 0, -1)
 	_box(Vector3(tc.x, 0.78, tc.z), Vector3(1.7, 0.07, 0.95), _mat("wood"), true, "wood")
 	for sx in [-0.75, 0.75]:
 		for sz in [-0.4, 0.4]:
 			_box(Vector3(tc.x + sx, 0.36, tc.z + sz), Vector3(0.07, 0.72, 0.07), _mat("wood"), false)
-	# Crates hiding the secret door on the east wall.
-	_box(_c("r1", 4.0, 4.2, 0.5), Vector3(1.3, 1.0, 1.3), _mat("crate"), true, "wood")
-	_box(_c("r1", 4.0, 2.6, 0.45), Vector3(1.2, 0.9, 1.1), _mat("crate"), true, "wood")
-	_box(_c("r1", 3.4, 3.4, 0.3), Vector3(0.9, 0.6, 0.9), _mat("crate"), true, "wood")
-	# Main Room 2: desks + shelf + storage.
-	_desk(_c("r2", -4, -3.5))
-	_desk(_c("r2", 3.5, -3.5))
-	_box(_c("r2", 5.5, 4.5, 1.1), Vector3(2.5, 2.2, 0.6), _mat("metal_dark"), true)
-	_box(_c("r2", -5.5, 4.0, 0.6), Vector3(1.8, 1.2, 1.2), _mat("crate"), true, "wood")
-	# Workspace: workbenches + shelves + pipes.
-	_table(_c("ws", -3, -2.5))
-	_table(_c("ws", 2.5, 1.5))
-	_box(_c("ws", -5.0, 3.0, 1.2), Vector3(0.6, 2.4, 3.0), _mat("metal_dark"), true)
-	_box(_c("ws", -3.6, 3.0, 1.9), Vector3(0.6, 2.4, 3.0), _mat("metal_dark"), true)
-	_box(_c("ws", 5.0, -3.5, 0.7), Vector3(1.6, 1.4, 1.0), _mat("machine_dark"), true)
-	_cyl(_c("ws", 4.2, -4.0, 0.8), 0.3, 1.6, _mat("pipe"), true)
-	# Security room dressing (lights handled separately).
-	_desk(_c("sec", -2.5, -3.0))
-	_desk(_c("sec", 2.0, -3.0))
+	# MAIN ROOM: desks (notes + power key), pool table, corner boxes (arcade key).
+	_desk(_c("main", -4, -3.5))
+	_desk(_c("main", 3.5, -3.5))
+	_box(_c("main", 5.5, 4.5, 1.1), Vector3(2.5, 2.2, 0.6), _mat("metal_dark"), true)
+	_box(_c("main", -5.5, 4.0, 0.6), Vector3(1.8, 1.2, 1.2), _mat("crate"), true, "wood")
+	_box(_c("main", -6.5, -4.5, 0.5), Vector3(1.3, 1.0, 1.3), _mat("crate"), true, "wood")
+	_box(_c("main", -5.5, -5.0, 0.45), Vector3(1.1, 0.9, 1.1), _mat("crate"), true, "wood")
+	_box(_c("main", -6.8, -3.6, 0.35), Vector3(0.9, 0.7, 0.9), _mat("crate"), true, "wood")
+	# POWER ROOM: left = electrical panel, right = workbenches/shelves.
+	_box(_c("power", -5.0, 0, 1.1), Vector3(0.8, 2.2, 1.4), _mat("machine_dark"), true)
+	_box(_c("power", -5.0, 0, 1.5), Vector3(0.5, 0.6, 1.0), _mat("hazard"), false)
+	_table(_c("power", 2.5, -2.5))
+	_table(_c("power", 4.5, 1.5))
 	for i in 3:
-		_box(_c("sec", 4.6, -4.5 + i * 1.6, 1.0), Vector3(0.8, 2.0, 1.2), _mat("machine_dark"), true)
-	_box(_c("sec", -4.8, 3.8, 0.8), Vector3(1.4, 1.6, 0.8), _mat("machine"), true)
-	# Video game room: carpet + cabinets + posters.
-	_box(_c("vg", 0, 0, 0.03), Vector3(10, 0.06, 6), _mat("carpet"), false, "carpet")
-	_box(_c("vg", -5.5, -2.5, 0.9), Vector3(0.9, 1.8, 1.8), _mat("machine_dark"), true)
-	_box(_c("vg", 5.5, 2.5, 0.9), Vector3(0.9, 1.8, 1.8), _mat("machine_dark"), true)
-	for i in 3:
-		var px = _c("vg", -4 + i * 4, -3.4, 1.6)
-		var poster = MeshInstance3D.new()
-		var pm = BoxMesh.new(); pm.size = Vector3(1.4, 1.8, 0.05)
-		poster.mesh = pm
-		poster.material_override = _mat("wall_paint") if i % 2 == 0 else _mat("carpet")
-		poster.position = px
-		add_child(poster)
-	# Trim + fixtures for every room.
-	for rid in ["r1", "r2", "ws", "sec", "vg"]:
+		_box(_c("power", -1.0 + i * 1.2, -4.0, 1.0), Vector3(1.0, 2.0, 0.6), _mat("metal_dark"), true)
+	# ARCADE ROOM: carpet + cabinets + pool table.
+	_box(_c("arcade", 0, 0, 0.03), Vector3(12, 0.06, 5), _mat("carpet"), false, "carpet")
+	_box(_c("arcade", -5.5, -2.0, 0.9), Vector3(0.9, 1.8, 1.8), _mat("machine_dark"), true)
+	_box(_c("arcade", 5.5, 2.0, 0.9), Vector3(0.9, 1.8, 1.8), _mat("machine_dark"), true)
+	var pc = _c("arcade", -3.0, 1.0)
+	_box(Vector3(pc.x, 0.95, pc.z), Vector3(3.2, 0.08, 1.6), _mat("wood"), false, "wood")
+	_box(Vector3(pc.x, 1.0, pc.z), Vector3(3.0, 0.03, 1.4), _mat("plant"), false, "carpet")
+	for sx in [-1.4, 1.4]:
+		for sz in [-0.6, 0.6]:
+			_box(Vector3(pc.x + sx, 0.46, pc.z + sz), Vector3(0.14, 0.92, 0.14), _mat("wood"), true, "wood")
+	_box(Vector3(pc.x - 1.55, 0.5, pc.z), Vector3(0.12, 0.5, 0.5), _mat("wood"), true, "wood")
+	# Pool balls resting on the felt.
+	var ball_cols = [Color(1, 0.85, 0.1), Color(0.15, 0.35, 0.9), Color(0.9, 0.15, 0.15),
+		Color(0.6, 0.2, 0.8), Color(0.95, 0.5, 0.1), Color(0.1, 0.6, 0.2), Color(0.6, 0.4, 0.2)]
+	for i in 8:
+		var bm = MeshInstance3D.new()
+		var sm = SphereMesh.new()
+		sm.radius = 0.07; sm.height = 0.14
+		bm.mesh = sm
+		bm.material_override = game._mat(ball_cols[i % ball_cols.size()], 0.4, 0.1)
+		bm.position = Vector3(pc.x + randf_range(-1.1, 1.1), 1.09, pc.z + randf_range(-0.45, 0.45))
+		add_child(bm)
+	# STORAGE ROOM: shelf units with clutter + scattered boxes.
+	for row in 3:
+		for col in 4:
+			if row == 1 and col == 3:
+				continue  # keep the power-cell door clear
+			_shelf_unit(_c("storage", -4.0 + col * 2.4, -4.0 + row * 3.5, 0))
+	for i in 10:
+		_box(Vector3(randf_range(5.5, 12.5), 0.4, randf_range(-5.0, 5.0)),
+			Vector3(randf_range(0.6, 1.1), randf_range(0.5, 0.9), randf_range(0.6, 1.1)),
+			_mat("crate"), true, "wood")
+	# Trim + fixtures.
+	for rid in ["start", "main", "power", "arcade", "storage"]:
 		_trims(rid)
-	_fixture("r1", "fixture_warm")
-	_fixture("r2", "fixture_cool")
-	_fixture("ws", "fixture_cool")
-	_fixture("vg", "fixture_purple")
-	# Generous interact zones on desk monitors.
-	for d in [_c("r2", -4, -3.5), _c("r2", 3.5, -3.5), _c("sec", -2.5, -3.0), _c("sec", 2.0, -3.0)]:
+	_fixture("start", "fixture_warm")
+	_fixture("main", "fixture_cool")
+	_fixture("power", "fixture_cool")
+	_fixture("arcade", "fixture_purple")
+	_fixture("storage", "fixture_green")
+	# Interact zones on desk monitors + pool table.
+	for d in [_c("main", -4, -3.5), _c("main", 3.5, -3.5)]:
 		_zone(Vector3(d.x + 0.4, 1.05, d.z - 0.2), Vector3(1.1, 0.8, 0.9),
-			{"type": "computer", "id": "desk", "prompt": "MONITOR"})
+			{"type": "computer", "id": "desk", "prompt": "NOTE"})
+	_zone(pc + Vector3(0, 1.35, 0), Vector3(3.4, 0.9, 1.8),
+		{"type": "pool", "id": "pool", "prompt": "PLAY 8-BALL"})
+
+
+# ---------------------------------------------------------------
+# POWER-CELL CLOSET (far end of Storage Room)
+# ---------------------------------------------------------------
+
+func _closet() -> void:
+	# Small closet at the east end of the Storage Room (x ~13.4..15.85,
+	# z -1.7..1.7). Back wall is the room's own east wall.
+	var wall = _mat("concrete_dark")
+	# North / south closet walls.
+	_box(Vector3(14.55, WALL_H / 2, -1.85), Vector3(2.6, WALL_H, 0.3), wall, true)
+	_box(Vector3(14.55, WALL_H / 2, 1.85), Vector3(2.6, WALL_H, 0.3), wall, true)
+	# West face: two segments beside the 2.4m door gap + lintel.
+	_box(Vector3(13.4, WALL_H / 2, -1.45), Vector3(0.3, WALL_H, 0.5), wall, true)
+	_box(Vector3(13.4, WALL_H / 2, 1.45), Vector3(0.3, WALL_H, 0.5), wall, true)
+	_box(Vector3(13.4, DOOR_H + (WALL_H - DOOR_H) / 2, 0), Vector3(0.3, WALL_H - DOOR_H, 2.4), wall, false)
+
+
+func _shelf_unit(c: Vector3) -> void:
+	# Shelf unit: 4 posts, 3 boards, clutter (cans + boxes) on each board.
+	var metal = _mat("metal_dark")
+	for sx in [-0.22, 0.22]:
+		for sz in [-1.4, 1.4]:
+			_box(Vector3(c.x + sx, 1.0, c.z + sz), Vector3(0.06, 2.0, 0.06), metal, true)
+	var cols = [Color(0.7, 0.7, 0.72), Color(0.6, 0.32, 0.2), Color(0.2, 0.4, 0.7),
+		Color(0.8, 0.7, 0.3), Color(0.5, 0.5, 0.55)]
+	for bi in 3:
+		var sy = 0.45 + bi * 0.6
+		_box(Vector3(c.x, sy, c.z), Vector3(0.5, 0.05, 2.9), _mat("wood"), true, "wood")
+		var n = randi() % 3 + 2
+		for i in n:
+			var px = c.x + randf_range(-0.1, 0.1)
+			var pz = c.z + randf_range(-1.3, 1.3)
+			var m = game._mat(cols[randi() % cols.size()], 0.5, 0.6)
+			if randf() < 0.5:
+				_cyl(Vector3(px, sy + 0.07, pz), 0.05, 0.13, m, true)
+			else:
+				var bs = randf_range(0.12, 0.28)
+				_box(Vector3(px, sy + 0.03 + bs / 2, pz), Vector3(bs, bs, bs), m, true)
 
 
 func _trims(rid: String) -> void:
@@ -289,22 +343,6 @@ func _table(center: Vector3) -> void:
 	for sx in [-0.9, 0.9]:
 		for sz in [-0.4, 0.4]:
 			_box(Vector3(center.x + sx, 0.4, center.z + sz), Vector3(0.08, 0.8, 0.08), _mat("metal_dark"), false)
-
-
-func _security_fixtures() -> void:
-	# Ceiling light fixtures (emissive panels) in the security room; actual
-	# OmniLights are created by main so they can be switched.
-	var r = rooms["sec"]["rect"]
-	for i in 2:
-		var fx = r.position.x + 3.0 + i * 6.0
-		var fz = r.position.y + r.size.y / 2
-		var panel = MeshInstance3D.new()
-		var bm = BoxMesh.new(); bm.size = Vector3(1.6, 0.08, 0.5)
-		panel.mesh = bm
-		panel.material_override = _mat("screen")
-		panel.position = Vector3(fx, WALL_H - 0.15, fz)
-		add_child(panel)
-		sec_fixtures.append(panel)
 
 
 # ---------------------------------------------------------------
