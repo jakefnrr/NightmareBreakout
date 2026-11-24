@@ -70,7 +70,8 @@ func add_shake(amount: float) -> void:
 
 func can_control() -> bool:
 	return game != null and game.is_playing() and not frozen and not dead \
-		and not game.ui_blocking() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+		and not game.ui_blocking() \
+		and (Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or game.touch_enabled)
 
 
 func set_flashlight_owned(v: bool) -> void:
@@ -114,8 +115,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		head.rotation.x = clampf(head.rotation.x - event.relative.y * MOUSE_SENS,
 			-PITCH_LIMIT, PITCH_LIMIT)
 	elif event is InputEventMouseButton and event.pressed \
-			and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not game.ui_blocking():
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not game.ui_blocking() \
+			and not game.touch_enabled:
+		game._capture_mouse()
 	var is_echo = event is InputEventKey and event.echo
 	if event.is_action_pressed("interact") and not is_echo:
 		if current_interact.size() > 0 and not game.ui_blocking():
@@ -139,7 +141,8 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
-	var input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+	var input: Vector2 = game.touch_move if game.touch_move != Vector2.ZERO \
+		else Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	var wish = (transform.basis * Vector3(input.x, 0.0, input.y)).normalized() * WALK_SPEED
 	velocity.x = lerpf(velocity.x, wish.x, minf(1.0, ACCEL * delta))
 	velocity.z = lerpf(velocity.z, wish.z, minf(1.0, ACCEL * delta))

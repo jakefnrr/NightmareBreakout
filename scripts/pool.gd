@@ -390,6 +390,14 @@ func _input(event: InputEvent) -> void:
 		elif aiming:
 			aiming = false
 			_shoot()
+	elif event is InputEventScreenTouch:
+		# Touch: drag aims via mouse-emulation, tap releases the shot.
+		if event.pressed:
+			aiming = true
+			aim_from = table.get_local_mouse_position()
+		elif aiming:
+			aiming = false
+			_shoot()
 
 
 func _shoot() -> void:

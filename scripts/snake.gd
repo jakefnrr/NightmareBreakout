@@ -20,12 +20,15 @@ var score_label: Label
 var board_box: Control
 var go_box: VBoxContainer
 var go_label: Label
+var dpad: Control = null
+var touch_device := false
 
 
 func _ready() -> void:
 	game = get_node("/root/Main")
 	ui_font = SystemFont.new()
 	ui_font.font_names = ["Helvetica Neue", "Helvetica", "Arial", "DejaVu Sans", "sans-serif"]
+	touch_device = DisplayServer.is_touchscreen_available()
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 30
 	_build()
@@ -81,7 +84,7 @@ func _build() -> void:
 			board_box.add_child(r)
 			cells.append(r)
 	var hint = Label.new()
-	hint.text = "ARROWS / WASD TO MOVE"
+	hint.text = "USE THE PAD TO MOVE" if touch_device else "ARROWS / WASD TO MOVE"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_font_size_override("font_size", 21)
 	hint.add_theme_font_override("font", ui_font)
@@ -117,12 +120,72 @@ func _build() -> void:
 	b2.add_theme_font_override("font", ui_font)
 	b2.pressed.connect(func(): back())
 	row.add_child(b2)
+	_build_dpad()
+
+
+func _dbtn(parent: Node, glyph: String, dir: Vector2i, min_size: Vector2) -> Button:
+	var b = Button.new()
+	b.text = glyph
+	b.custom_minimum_size = min_size
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	b.add_theme_font_size_override("font_size", 44)
+	b.add_theme_font_override("font", ui_font)
+	b.add_theme_color_override("font_color", Color(0.9, 1.0, 0.95))
+	var st = StyleBoxFlat.new()
+	st.bg_color = Color(0.05, 0.12, 0.07, 0.6)
+	st.border_color = Color(0.5, 1.0, 0.6, 0.8)
+	st.set_border_width_all(3)
+	st.set_corner_radius_all(10)
+	for state in ["normal", "hover", "pressed", "focus"]:
+		b.add_theme_stylebox_override(state, st)
+	b.pressed.connect(func(): _queue_dir(dir))
+	parent.add_child(b)
+	return b
+
+
+func _build_dpad() -> void:
+	# Big touch dpad along the bottom, styled like the Snake.html arcade game.
+	dpad = Control.new()
+	dpad.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	dpad.offset_top = -190
+	dpad.offset_left = 20
+	dpad.offset_right = -20
+	dpad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dpad.visible = false
+	add_child(dpad)
+	var row = HBoxContainer.new()
+	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.add_theme_constant_override("separation", 0)
+	dpad.add_child(row)
+	# Left / right zones.
+	var left = Control.new()
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(left)
+	var lb = _dbtn(left, "◀", Vector2i(-1, 0), Vector2(0, 0))
+	lb.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var right = Control.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(right)
+	var rb = _dbtn(right, "▶", Vector2i(1, 0), Vector2(0, 0))
+	rb.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Center column: up over down.
+	var center = VBoxContainer.new()
+	center.custom_minimum_size = Vector2(200, 0)
+	center.add_theme_constant_override("separation", 4)
+	row.add_child(center)
+	_dbtn(center, "▲", Vector2i(0, -1), Vector2(200, 88))
+	_dbtn(center, "▼", Vector2i(0, 1), Vector2(200, 88))
 
 
 func open() -> void:
 	reset()
 	panel.visible = true
 	open_flag = true
+	if dpad:
+		dpad.visible = touch_device
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	game.pause_for_panel()
 
@@ -142,6 +205,8 @@ func reset() -> void:
 func close_quiet() -> void:
 	panel.visible = false
 	open_flag = false
+	if dpad:
+		dpad.visible = false
 	game.resume_from_panel()
 
 
@@ -149,6 +214,8 @@ func back() -> void:
 	# Leave the mini-game without resuming; the jumpscare resumes us.
 	panel.visible = false
 	open_flag = false
+	if dpad:
+		dpad.visible = false
 	game.on_snake_back()
 
 

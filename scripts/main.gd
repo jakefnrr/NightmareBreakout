@@ -21,6 +21,8 @@ var held_index := -1
 var pick_counter := 0
 
 var started := false
+var touch_enabled := false
+var touch_move := Vector2.ZERO
 var total_time := 0.0
 var mouse_sensitivity := 0.0021
 var master_volume := -6.0
@@ -45,6 +47,7 @@ const ITEMS := {
 
 
 func _ready() -> void:
+	touch_enabled = DisplayServer.is_touchscreen_available()
 	_load_time()
 	_make_materials()
 	_build_environment()
@@ -73,6 +76,10 @@ func _ready() -> void:
 	pool.name = "Pool"
 	pool.set_script(load("res://scripts/pool.gd"))
 	add_child(pool)
+	touch = CanvasLayer.new()
+	touch.name = "Touch"
+	touch.set_script(load("res://scripts/touch.gd"))
+	add_child(touch)
 	ui.show_main_menu()
 
 
@@ -474,6 +481,12 @@ func _setup_menu_cam() -> void:
 	add_child(menu_light)
 
 
+func _capture_mouse() -> void:
+	# Never capture on touch devices — buttons need a free cursor.
+	if not touch_enabled:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
 func start_game() -> void:
 	if started:
 		return
@@ -483,7 +496,7 @@ func start_game() -> void:
 		menu_light.visible = false
 	menu_cam.current = false
 	player.cam.current = true
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_capture_mouse()
 	ui.show_message("FIND A WAY OUT", 3.0)
 
 
@@ -508,7 +521,7 @@ func resume_from_panel() -> void:
 	if panel_count == 0:
 		get_tree().paused = false
 		if started:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			_capture_mouse()
 
 
 func toggle_pause_or_close() -> void:
@@ -528,7 +541,7 @@ func toggle_pause_or_close() -> void:
 		ui.hide_pause()
 		if is_playing():
 			get_tree().paused = false
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			_capture_mouse()
 		return
 	if not started:
 		return
@@ -539,7 +552,7 @@ func toggle_pause_or_close() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	else:
 		ui.hide_pause()
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		_capture_mouse()
 
 
 func toggle_inventory() -> void:
@@ -703,23 +716,24 @@ func _spawn_dropped(item_id: String) -> void:
 # ---------------------------------------------------------------
 
 func get_prompt(data: Dictionary) -> String:
+	var pre := "[USE]" if touch_enabled else "[E]"
 	var t: String = data.get("type", "")
 	match t:
 		"pickup":
-			return "[E] PICK UP " + str(ITEMS.get(data.get("item_id", ""), {}).get("name", "ITEM"))
+			return pre + " PICK UP " + str(ITEMS.get(data.get("item_id", ""), {}).get("name", "ITEM"))
 		"door":
 			var rec: Dictionary = doors.get(data.get("id", ""), {})
 			if rec.get("open", false):
 				return ""
 			var req: Dictionary = rec.get("req", {})
 			if req.size() == 0:
-				return "[E] OPEN"
-			return "[E] LOCKED — " + _req_text(req)
-		"arcade": return "[E] PLAY"
-		"pool": return "[E] PLAY 8-BALL"
-		"computer": return "[E] READ " + str(data.get("prompt", "NOTE"))
-		"power_button": return "[E] POWER BUTTON"
-		_: return "[E] " + str(data.get("prompt", "INTERACT"))
+				return pre + " OPEN"
+			return pre + " LOCKED — " + _req_text(req)
+		"arcade": return pre + " PLAY"
+		"pool": return pre + " PLAY 8-BALL"
+		"computer": return pre + " READ " + str(data.get("prompt", "NOTE"))
+		"power_button": return pre + " POWER BUTTON"
+		_: return pre + " " + str(data.get("prompt", "INTERACT"))
 
 
 func _req_text(req: Dictionary) -> String:
@@ -818,6 +832,7 @@ func on_pool_back() -> void:
 
 var monster: CharacterBody3D = null
 var pool: CanvasLayer = null
+var touch: CanvasLayer = null
 var chase_active := false
 var won := false
 var key_taken := false
