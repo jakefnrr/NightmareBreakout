@@ -152,6 +152,9 @@ func _synthesize(n: String) -> AudioStream:
 		"terminal": return _sweep(500, 800, 0.2, 0.25)
 		"page": return _noise(0.15, 0.2)
 		"alarm": return _sweep(600, 600, 0.4, 0.3)
+		"jumpscare": return _jumpscare_stream()
+		"snake_beep": return _tone(660, 0.06, 0.3, 10.0)
+		"snake_eat": return _chord([660, 880], 0.15, 0.3)
 		_: return null
 	if n.begins_with("step_"):
 		return _footstep(n.trim_prefix("step_"))
@@ -218,6 +221,23 @@ func _noise(dur: float, vol: float) -> AudioStreamWAV:
 		var white = randf() * 2.0 - 1.0
 		last = lerpf(last, white, 0.35)
 		s[i] = last * vol * (1.0 - t / dur)
+	return _wav_bytes(s)
+
+
+func _jumpscare_stream() -> AudioStreamWAV:
+	var dur = 1.1
+	var n = int(MIX_RATE * dur)
+	var s = PackedFloat32Array()
+	s.resize(n)
+	for i in n:
+		var t = i / MIX_RATE
+		var white = randf() * 2.0 - 1.0
+		var last = 0.0
+		# crude one-pole for body
+		last = lerpf(last, white, 0.4)
+		var screech = sin(t * TAU * (900.0 + 300.0 * sin(t * 30.0))) * 0.25
+		var env = 1.0 - t / dur
+		s[i] = (last * 0.9 + screech) * env * 0.95
 	return _wav_bytes(s)
 
 

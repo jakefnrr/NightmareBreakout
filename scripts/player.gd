@@ -90,14 +90,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed \
 			and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not game.ui_blocking():
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	elif event.is_action_pressed("interact") and not event.echo:
+	var is_echo = event is InputEventKey and event.echo
+	if event.is_action_pressed("interact") and not is_echo:
 		if current_interact.size() > 0 and not game.ui_blocking():
 			game.interact(current_interact)
-	elif event.is_action_pressed("flashlight") and not event.echo:
+	elif event.is_action_pressed("flashlight") and not is_echo:
 		toggle_flashlight()
-	elif event.is_action_pressed("inventory") and not event.echo:
+	elif event.is_action_pressed("inventory") and not is_echo:
 		game.toggle_inventory()
-	elif event.is_action_pressed("ui_cancel") and not event.echo:
+	elif event.is_action_pressed("ui_cancel") and not is_echo:
 		game.toggle_pause_or_close()
 
 
