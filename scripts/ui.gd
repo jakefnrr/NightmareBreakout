@@ -11,6 +11,7 @@ var settings_panel: Control
 var inventory_panel: Control
 var doc_panel: Control
 var scare_rect: TextureRect
+var scare_player: AudioStreamPlayer = null
 var inv_grid: GridContainer
 var inv_detail: Label
 var inv_battery: Label
@@ -313,6 +314,9 @@ func _build_scare() -> void:
 	scare_rect.visible = false
 	scare_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(scare_rect)
+	scare_player = AudioStreamPlayer.new()
+	scare_player.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(scare_player)
 
 
 # ---------------------------------------------------------------
@@ -524,7 +528,7 @@ func _make_scare_texture() -> Texture2D:
 
 func _scare_texture(kind: String) -> Texture2D:
 	# Custom jumpscare images; fall back to the procedural face.
-	var path := "res://scare_arcade.jpg" if kind == "arcade" else "res://scare_pool.webp"
+	var path := "res://scare_arcade.jpg" if kind == "arcade" else "res://scare_pool.jpg"
 	if ResourceLoader.exists(path):
 		var t: Texture2D = load(path)
 		if t:
@@ -544,7 +548,16 @@ func play_jumpscare(kind := "arcade") -> void:
 	lunge.tween_property(scare_rect, "scale", Vector2(1.25, 1.25), 0.14)\
 		.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	if game.audio:
+	# Custom scare sound if one exists for this minigame, else synth sting.
+	var snd_path := "res://scare_arcade.mp3" if kind == "arcade" else ""
+	var played_custom := false
+	if snd_path != "" and ResourceLoader.exists(snd_path):
+		var st: AudioStream = load(snd_path)
+		if st and scare_player:
+			scare_player.stream = st
+			scare_player.play()
+			played_custom = true
+	if not played_custom and game.audio:
 		game.audio.play_sfx("jumpscare", 0.0)
 	if game.player:
 		game.player.add_shake(0.8)
