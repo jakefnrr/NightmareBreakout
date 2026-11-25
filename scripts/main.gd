@@ -1,6 +1,5 @@
 extends Node3D
 
-const SAVE_TIME := "user://nb_time.cfg"
 const ITEM_CAP := 2
 
 var mats := {}
@@ -48,7 +47,6 @@ const ITEMS := {
 
 func _ready() -> void:
 	touch_enabled = DisplayServer.is_touchscreen_available()
-	_load_time()
 	_make_materials()
 	_build_environment()
 	level = Node3D.new()
@@ -82,9 +80,6 @@ func _ready() -> void:
 	add_child(touch)
 	ui.show_main_menu()
 
-
-func _exit_tree() -> void:
-	_save_time()
 
 
 # ---------------------------------------------------------------
@@ -879,9 +874,6 @@ func _maybe_spawn_extras() -> void:
 func _monster_caught() -> void:
 	# Full restart: reset the run and reload the scene.
 	total_time = 0.0
-	var da = DirAccess.open("user://")
-	if da:
-		da.remove("nb_time.cfg")
 	get_tree().reload_current_scene()
 
 
@@ -946,18 +938,6 @@ func format_time(sec: float) -> String:
 	var s = int(sec - h * 3600.0 - m * 60.0)
 	return "%02d:%02d:%02d" % [h, m, s]
 
-
-func _save_time() -> void:
-	var c = ConfigFile.new()
-	c.set_value("time", "total", total_time)
-	c.save(SAVE_TIME)
-
-
-func _load_time() -> void:
-	if FileAccess.file_exists(SAVE_TIME):
-		var c = ConfigFile.new()
-		if c.load(SAVE_TIME) == OK:
-			total_time = c.get_value("time", "total", 0.0)
 
 
 func set_sensitivity(v: float) -> void:
