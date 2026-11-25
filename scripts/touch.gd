@@ -81,12 +81,11 @@ func _build() -> void:
 	play_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(play_ui)
 
-	# Joystick base — bottom-left.
+	# Floating joystick — hidden until your thumb touches the left side.
 	joy_base = Panel.new()
 	joy_base.custom_minimum_size = Vector2(190, 190)
 	joy_base.size = Vector2(190, 190)
-	joy_base.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	joy_base.position = Vector2(70, -280)
+	joy_base.visible = false
 	joy_base.add_theme_stylebox_override("panel",
 		_style(Color(0.05, 0.1, 0.06, 0.4), Color(0.5, 1.0, 0.6, 0.5), 95))
 	play_ui.add_child(joy_base)
@@ -137,10 +136,8 @@ func _viewport_size() -> Vector2:
 
 
 func _joy_zone(pos: Vector2) -> bool:
-	# Only near the stick itself — generous radius around the base.
-	var r := joy_base.get_global_rect()
-	var c := r.get_center()
-	return pos.distance_to(c) < JOY_RADIUS * 2.6
+	# Anywhere on the left ~45% of the screen spawns the floating stick.
+	return pos.x < _viewport_size().x * 0.45
 
 
 func _on_button(pos: Vector2) -> bool:
@@ -151,12 +148,23 @@ func _on_button(pos: Vector2) -> bool:
 
 
 func _update_joy(pos: Vector2) -> void:
-	joy_center = joy_base.get_global_rect().get_center()
 	var rel = (pos - joy_center) / JOY_RADIUS
 	joy_vec = rel.limit_length(1.0)
-	if joy_vec.length() < 0.18:
+	if joy_vec.length() < 0.15:
 		joy_vec = Vector2.ZERO
 	joy_knob.position = Vector2(57, 57) + joy_vec * JOY_VISUAL
+
+
+func _show_joy_at(pos: Vector2) -> void:
+	joy_center = pos
+	# Center the 190px base on the touch point, clamped on-screen.
+	var half := Vector2(95, 95)
+	var s := _viewport_size()
+	joy_base.position = Vector2(
+		clampf(pos.x - half.x, 10.0, s.x - 200.0),
+		clampf(pos.y - half.y, 10.0, s.y - 200.0))
+	joy_base.visible = true
+	joy_knob.position = Vector2(57, 57)
 
 
 func _input(event: InputEvent) -> void:
@@ -168,14 +176,18 @@ func _input(event: InputEvent) -> void:
 		if event.pressed:
 			if _joy_zone(pos) and not _on_button(pos):
 				joy_touch = event.index
+				_show_joy_at(pos)
 				_update_joy(pos)
-			elif pos.x > _viewport_size().x * 0.42 and not _on_button(pos):
+			elif pos.x > _viewport_size().x * 0.45 and not _on_button(pos):
 				look_touch = event.index
 				look_last = pos
 		elif event.index == joy_touch:
 			joy_touch = -1
 			joy_vec = Vector2.ZERO
-			joy_knob.position = Vector2(57, 57)
+			if joy_base:
+				joy_base.visible = false
+			if joy_knob:
+				joy_knob.position = Vector2(57, 57)
 		elif event.index == look_touch:
 			look_touch = -1
 	elif event is InputEventScreenDrag:
@@ -203,6 +215,8 @@ func _process(_delta: float) -> void:
 		if joy_touch != -1 or joy_vec != Vector2.ZERO:
 			joy_touch = -1
 			joy_vec = Vector2.ZERO
+			if joy_base:
+				joy_base.visible = false
 			if joy_knob:
 				joy_knob.position = Vector2(57, 57)
 		if game:
