@@ -818,7 +818,7 @@ func open_pool() -> void:
 
 func on_pool_back() -> void:
 	if ui:
-		ui.play_jumpscare()
+		ui.play_jumpscare("pool")
 
 
 # ---------------------------------------------------------------

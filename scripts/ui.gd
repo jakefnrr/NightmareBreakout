@@ -522,12 +522,21 @@ func _make_scare_texture() -> Texture2D:
 	return ImageTexture.create_from_image(img)
 
 
-func play_jumpscare() -> void:
+func _scare_texture(kind: String) -> Texture2D:
+	# Custom jumpscare images; fall back to the procedural face.
+	var path := "res://scare_arcade.jpg" if kind == "arcade" else "res://scare_pool.webp"
+	if ResourceLoader.exists(path):
+		var t: Texture2D = load(path)
+		if t:
+			return t
+	return _make_scare_texture()
+
+
+func play_jumpscare(kind := "arcade") -> void:
 	if scare_busy:
 		return
 	scare_busy = true
-	if scare_rect.texture == null:
-		scare_rect.texture = _make_scare_texture()
+	scare_rect.texture = _scare_texture(kind)
 	scare_rect.visible = true
 	scare_rect.pivot_offset = scare_rect.size / 2.0
 	scare_rect.scale = Vector2(0.25, 0.25)
