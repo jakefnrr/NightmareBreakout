@@ -145,43 +145,50 @@ func _dbtn(parent: Node, glyph: String, dir: Vector2i, min_size: Vector2) -> But
 
 
 func _build_dpad() -> void:
-	# Big touch dpad along the bottom, styled like the Snake.html arcade game.
+	# Cross dpad on the right side of the screen (touch devices only).
 	dpad = Control.new()
-	dpad.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	dpad.offset_top = -190
-	dpad.offset_left = 20
-	dpad.offset_right = -20
+	dpad.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+	dpad.position = Vector2(-290, -150)
+	dpad.custom_minimum_size = Vector2(280, 300)
+	dpad.size = Vector2(280, 300)
 	dpad.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	dpad.visible = false
 	add_child(dpad)
-	var row = HBoxContainer.new()
-	row.set_anchors_preset(Control.PRESET_FULL_RECT)
-	row.add_theme_constant_override("separation", 0)
-	dpad.add_child(row)
-	# Left / right zones.
-	var left = Control.new()
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(left)
-	var lb = _dbtn(left, "◀", Vector2i(-1, 0), Vector2(0, 0))
-	lb.set_anchors_preset(Control.PRESET_FULL_RECT)
-	var right = Control.new()
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(right)
-	var rb = _dbtn(right, "▶", Vector2i(1, 0), Vector2(0, 0))
-	rb.set_anchors_preset(Control.PRESET_FULL_RECT)
-	# Center column: up over down.
-	var center = VBoxContainer.new()
-	center.custom_minimum_size = Vector2(200, 0)
-	center.add_theme_constant_override("separation", 4)
-	row.add_child(center)
-	_dbtn(center, "▲", Vector2i(0, -1), Vector2(200, 88))
-	_dbtn(center, "▼", Vector2i(0, 1), Vector2(200, 88))
+	var grid = GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	grid.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dpad.add_child(grid)
+	# 3x3 cross: sp ▲ sp / ◀ sp ▶ / sp ▼ sp
+	var layout: Array = [
+		["", Vector2i(0, -1), ""],
+		[Vector2i(-1, 0), "", Vector2i(1, 0)],
+		["", Vector2i(0, 1), ""],
+	]
+	for row in layout:
+		for cell in row:
+			if cell is Vector2i:
+				var glyph := "▶"
+				if cell == Vector2i(0, -1): glyph = "▲"
+				elif cell == Vector2i(0, 1): glyph = "▼"
+				elif cell == Vector2i(-1, 0): glyph = "◀"
+				_dbtn(grid, glyph, cell, Vector2(84, 84))
+			else:
+				var sp = Control.new()
+				sp.custom_minimum_size = Vector2(84, 84)
+				grid.add_child(sp)
 
 
 func open() -> void:
 	reset()
+	if touch_device:
+		# Mobile: board hugs the top, dpad sits on the right side.
+		panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
+		panel.position = Vector2(-280, 20)
+	else:
+		panel.set_anchors_preset(Control.PRESET_CENTER)
+		panel.position = Vector2(-280, -310)
 	panel.visible = true
 	open_flag = true
 	if dpad:
