@@ -101,18 +101,18 @@ func _build() -> void:
 	# Bottom-right action buttons.
 	var actions = VBoxContainer.new()
 	actions.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	actions.position = Vector2(-230, -330)
+	actions.position = Vector2(-250, -350)
 	actions.add_theme_constant_override("separation", 18)
 	play_ui.add_child(actions)
-	use_btn = _btn(actions, "USE", Vector2(140, 140), 40)
+	use_btn = _btn(actions, "INTERACT", Vector2(190, 140), 36)
 	use_btn.pressed.connect(_on_use)
-	light_btn = _btn(actions, "LIGHT", Vector2(140, 76), 30)
+	light_btn = _btn(actions, "USE FLASHLIGHT", Vector2(190, 76), 24)
 	light_btn.pressed.connect(_on_light)
 
 	# Top-right buttons: INVENTORY + MENU.
 	top_bar = HBoxContainer.new()
 	top_bar.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	top_bar.position = Vector2(-230, 24)
+	top_bar.position = Vector2(-290, 24)
 	top_bar.add_theme_constant_override("separation", 14)
 	root.add_child(top_bar)
 	inv_btn = _btn(top_bar, "INVENTORY", Vector2(160, 64), 26)
@@ -137,8 +137,10 @@ func _viewport_size() -> Vector2:
 
 
 func _joy_zone(pos: Vector2) -> bool:
-	var s = _viewport_size()
-	return pos.x < s.x * 0.40 and pos.y > s.y * 0.40
+	# Only near the stick itself — generous radius around the base.
+	var r := joy_base.get_global_rect()
+	var c := r.get_center()
+	return pos.distance_to(c) < JOY_RADIUS * 2.6
 
 
 func _on_button(pos: Vector2) -> bool:
@@ -149,6 +151,7 @@ func _on_button(pos: Vector2) -> bool:
 
 
 func _update_joy(pos: Vector2) -> void:
+	joy_center = joy_base.get_global_rect().get_center()
 	var rel = (pos - joy_center) / JOY_RADIUS
 	joy_vec = rel.limit_length(1.0)
 	if joy_vec.length() < 0.18:
