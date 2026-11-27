@@ -148,7 +148,7 @@ func _physics_process(delta: float) -> void:
 	velocity.z = lerpf(velocity.z, wish.z, minf(1.0, ACCEL * delta))
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
-	elif Input.is_action_pressed("jump"):
+	elif Input.is_action_pressed("jump") or (game != null and game.touch_jump):
 		velocity.y = JUMP_SPEED
 	else:
 		velocity.y = 0.0

@@ -18,12 +18,14 @@ var look_touch := -1
 var look_last := Vector2.ZERO
 
 var use_btn: Button = null
+var jump_btn: Button = null
 var light_btn: Button = null
 var inv_btn: Button = null
 var menu_btn: Button = null
 
 const JOY_RADIUS := 85.0
 const JOY_VISUAL := 52.0
+const JOY_DEADZONE := 0.22
 const LOOK_SENS_MULT := 1.9
 
 
@@ -105,6 +107,9 @@ func _build() -> void:
 	play_ui.add_child(actions)
 	use_btn = _btn(actions, "INTERACT", Vector2(190, 140), 36)
 	use_btn.pressed.connect(_on_use)
+	jump_btn = _btn(actions, "JUMP", Vector2(190, 110), 34)
+	jump_btn.button_down.connect(func(): game.touch_jump = true)
+	jump_btn.button_up.connect(func(): game.touch_jump = false)
 	light_btn = _btn(actions, "USE FLASHLIGHT", Vector2(190, 76), 24)
 	light_btn.pressed.connect(_on_light)
 
@@ -136,12 +141,14 @@ func _viewport_size() -> Vector2:
 
 
 func _joy_zone(pos: Vector2) -> bool:
-	# Anywhere on the left ~45% of the screen spawns the floating stick.
-	return pos.x < _viewport_size().x * 0.45
+	# Left ~45% of the screen, below the top strip — the movement zone.
+	# Like Fortnite/CoD Mobile: left thumb = move stick, right thumb = look.
+	var s := _viewport_size()
+	return pos.x < s.x * 0.45 and pos.y > s.y * 0.15
 
 
 func _on_button(pos: Vector2) -> bool:
-	for b in [use_btn, light_btn, inv_btn, menu_btn]:
+	for b in [use_btn, jump_btn, light_btn, inv_btn, menu_btn]:
 		if b and b.visible and b.get_global_rect().has_point(pos):
 			return true
 	return false
@@ -149,9 +156,13 @@ func _on_button(pos: Vector2) -> bool:
 
 func _update_joy(pos: Vector2) -> void:
 	var rel = (pos - joy_center) / JOY_RADIUS
-	joy_vec = rel.limit_length(1.0)
-	if joy_vec.length() < 0.15:
+	var len := rel.length()
+	if len < JOY_DEADZONE:
 		joy_vec = Vector2.ZERO
+	else:
+		# Remap past the deadzone so small pushes stay smooth, not stuttery.
+		var mag := minf((len - JOY_DEADZONE) / (1.0 - JOY_DEADZONE), 1.0)
+		joy_vec = rel / len * mag
 	joy_knob.position = Vector2(57, 57) + joy_vec * JOY_VISUAL
 
 
@@ -174,11 +185,13 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		var pos: Vector2 = event.position
 		if event.pressed:
-			if _joy_zone(pos) and not _on_button(pos):
+			if _on_button(pos):
+				pass
+			elif _joy_zone(pos) and joy_touch == -1:
 				joy_touch = event.index
 				_show_joy_at(pos)
 				_update_joy(pos)
-			elif pos.x > _viewport_size().x * 0.45 and not _on_button(pos):
+			elif look_touch == -1:
 				look_touch = event.index
 				look_last = pos
 		elif event.index == joy_touch:
@@ -221,6 +234,7 @@ func _process(_delta: float) -> void:
 				joy_knob.position = Vector2(57, 57)
 		if game:
 			game.touch_move = Vector2.ZERO
+			game.touch_jump = false
 		return
 	# Feed movement to the player.
 	game.touch_move = joy_vec

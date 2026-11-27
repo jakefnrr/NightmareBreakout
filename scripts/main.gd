@@ -22,6 +22,7 @@ var pick_counter := 0
 var started := false
 var touch_enabled := false
 var touch_move := Vector2.ZERO
+var touch_jump := false
 var total_time := 0.0
 var mouse_sensitivity := 0.0021
 var master_volume := -6.0
